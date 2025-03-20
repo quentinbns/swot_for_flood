@@ -1,83 +1,196 @@
 from pathlib import Path
+from typing import List
 
 import geopandas as gpd
 from shapely.geometry import shape, box
 
+import configparser
+
 from core.downloader import Downloader
+from core.pixc_rasterizer import Rasterizer
+
+DEFAULT_VARIABLES = [
+    'sig0', 
+    'coherent_power', 
+    'incidence', 
+    'gamma_tot', 
+    'gamma_SNR', 
+    'gamma_est', 
+    'power_plus_y', 
+    'power_minus_y',  
+    'interf_real', 
+    'interf_imag', 
+    'height', 
+    'classification', 
+    'bright_land_flag'
+    ]
+
 
 class SWOT_PROJECT():
     """
-    TODO: Add description
+    SWOT_PROJECT class to manage the SWOT project
+    Can be used to download data, process data, and plot data
     """
     def __init__(
         self, 
-        project: str, 
-        workspace: Path, 
-        data_path: Path, 
-        CRS: str, 
-        first_time: str, 
-        last_time: str, 
-        aoi: str, 
-        download : bool = False,
-        download_type: str = 'PIXC',
-        variables: list = [
-            'sig0', 
-            'coherent_power', 
-            'incidence', 
-            'gamma_tot', 
-            'gamma_SNR', 
-            'gamma_est', 
-            'power_plus_y', 
-            'power_minus_y',  
-            'interf_real', 
-            'interf_imag', 
-            'height', 
-            'classification', 
-            'bright_land_flag'
-            ],
-        aoi_crs: str=None, 
-        passes:list=None, 
-        nodes:int=4
+        param_dict: dict | configparser.ConfigParser
         ) -> None:
-        """_summary_
+        """Initialize the SWOT_PROJECT class
 
         Args:
-            project (str): string with the name of the project
-            workspace (Path): string with the path to the workspace
-            data_path (Path): string with the path to the data folder
-            CRS (str): string with the CRS of the project
-            first_time (str): string with the first date in the format 'YYYY-MM-DD'
-            last_time (str): string with the last date in the format 'YYYY-MM-DD'
-            aoi (str): string with the name of the AOI file path
-            aoi_crs (str, optional): string with the CRS of the AOI. Defaults to None.
-            passes (list, optional): list of SWOT passes to download. Defaults to None.
-            nodes (int, optional): number of nodes to use for parallel download. Defaults to 4.
+            param_dict (dict or configparser.ConfigParser): dictionary with the parameters of the project
+                it should contain the following keys:
+                   - project (str): string with the name of the project
+                   - workspace (Path): string with the path to the workspace
+                   - data_path (Path): string with the path to the data folder
+                   - CRS (str): string with the CRS of the project
+                   - first_time (str): string with the first date in the format 'YYYY-MM-DD'
+                   - last_time (str): string with the last date in the format 'YYYY-MM-DD'
+                   - aoi (str): string with the name of the AOI file path
+                   - aoi_crs (str, optional): string with the CRS of the AOI. Defaults to None.
+                   - passes (list, optional): list of SWOT passes to download. Defaults to None.
+                   - tile_names_selection (List[str], optional): list of tile names to select. Defaults to None.
+                   - nodes (int, optional): number of nodes to use for parallel download. Defaults to 4.
+                   - do_download (bool, optional): flag to download the data. Defaults to False.
+                   - download_type (str, optional): type of download. Defaults to 'PIXC'.
+                   - variables (List[str], optional): list of variables to download. Defaults to DEFAULT_VARIABLES.
+                   - gdal_grid_options (dict, optional): dictionary with the gdal_grid options. Defaults to dict().
+                   - gdal_merge_options (dict, optional): dictionary with the gdal_merge options. Defaults to dict().
+                   - GDAL_NUM_THREADS (int, optional): number of threads to use in GDAL. Defaults to 4.
+                   - GDAL_CACHEMAX (int, optional): maximum cache size for GDAL. Defaults to 1024.
+                   - do_make_gpkg (bool, optional): flag to make the geopackage. Defaults to False.
+                   - do_make_tiff (bool, optional): flag to make the tiff files. Defaults to False.
         """
-        self.project : str =  project
-        self.workspace : Path = workspace
-        self.data_path : Path = data_path
-        self.CRS : str = CRS
-        self.first_time : str = first_time
-        self.last_time : str = last_time
-        self.variables : list = variables
+        if isinstance(param_dict, configparser.ConfigParser):
+            try:
+                gdal_grid_options = dict(param_dict["GDAL_GRID_OPTIONS"])
+            except KeyError:
+                gdal_grid_options = dict()
+            try:
+                gdal_merge_options = dict(param_dict["GDAL_MERGE_OPTIONS"])
+            except KeyError:
+                gdal_merge_options = dict()
+            param_dict = dict(param_dict["CONFIG"])
+            param_dict['gdal_grid_options'] = gdal_grid_options
+            param_dict['gdal_merge_options'] = gdal_merge_options
+            param_dict['workspace'] = Path(param_dict['workspace'])
+            param_dict['data_path'] = Path(param_dict['data_path'])
+            param_dict['aoi'] = Path(param_dict['aoi'])
+            if 'passes' in param_dict.keys():
+                param_dict['passes'] = list(map(int, param_dict['passes'][1:-1].split(',')))
+            if 'variables' in param_dict.keys():
+                param_dict['variables'] = list(map(str, param_dict['variables'][1:-1].split(',')))
+            if 'do_download' in param_dict.keys():
+                param_dict['do_download'] = param_dict['do_download'] == 'True'
+            if 'do_make_gpkg' in param_dict.keys():
+                param_dict['do_make_gpkg'] = param_dict['do_make_gpkg'] == 'True'
+            if 'do_make_tiff' in param_dict.keys():
+                param_dict['do_make_tiff'] = param_dict['do_make_tiff'] == 'True'
+            if 'tile_names_selection' in param_dict.keys():
+                lst_tile = list()
+                for tile_str in param_dict['tile_names_selection'][1:-1].split(', '):
+                    lst = [str(i) for i in tile_str[1:-1].split(',')]
+                    lst_tile.append(lst)
+                param_dict['tile_names_selection'] = lst_tile
+            
 
+        for key in ['project', 'workspace', 'data_path', 'crs', 'first_time', 'last_time', "aoi"]:
+            if key not in param_dict.keys():
+                raise KeyError(f"Key {key} not found in param_dict")
+        
+        # mandatory parameters
+        self.project : str =  param_dict.get('project')
+        self.workspace : Path = param_dict.get('workspace')
+        self.data_path : Path = param_dict.get('data_path')
+        self.CRS : str = param_dict.get('crs')
+        self.first_time : str = param_dict.get('first_time')
+        self.last_time : str = param_dict.get('last_time')
+        
+        # optional parameters
+        self.variables : List[str] = param_dict.get('variables', DEFAULT_VARIABLES)
+        self.tile_names_selection : List[str] = param_dict.get('tile_names_selection', list())
+        do_download : bool = param_dict.get('do_download', False)
+        download_type : str = param_dict.get('download_type', 'PIXC')
+        passes : List[int] = param_dict.get('passes', None)
+        nodes : int = param_dict.get('nodes', 4)
+        gdal_grid_options : dict = param_dict.get('gdal_grid_options',dict())
+        gdal_merge_options : dict = param_dict.get('gdal_merge_options',dict())
+        GDAL_NUM_THREADS : int = param_dict.get('gdal_num_threads',4)
+        GDAL_CACHEMAX : int = param_dict.get('gdal_cachemax', 1024)
+        do_make_gpkg : bool = param_dict.get('do_make_gpkg', False)
+        do_make_tiff : bool = param_dict.get('do_make_tiff', False)
+
+        # initialize the paths
         self.define_paths()
         self.check_paths()
-        self.open_aoi(aoi, aoi_crs)
         
+        # open the AOI
+        self.open_aoi(param_dict.get('aoi'), aoi_crs=param_dict.get('aoi_crs', None))
+        
+        # initialize the Downloader and Rasterizer
         self.Downloader = Downloader(
             download_path=self.SWOT_PATH,
             first_time=self.first_time,
             last_time=self.last_time,
             AOI=self.AOI,
-            do_download=download,
+            do_download=do_download,
             download_type=download_type,
             passes=passes,
             nodes=nodes,
             )
+        
+        self.Rasterizer = Rasterizer(
+            SWOT_PATH=self.SWOT_PATH,
+            AUX_PATH=self.AUX_PATH,
+            PATH_GPKG=self.PATH_GPKG,
+            TIFF_PATH=self.TIFF_PATH,
+            first_time=self.first_time,
+            last_time=self.last_time,
+            AOI=self.AOI,
+            CRS=self.CRS,
+            variables=self.variables,
+            tile_names_selection= self.tile_names_selection,
+            gdal_grid_options=gdal_grid_options,
+            gdal_merge_options=gdal_merge_options,
+            GDAL_NUM_THREADS=GDAL_NUM_THREADS,
+            GDAL_CACHEMAX=GDAL_CACHEMAX,
+            do_make_gpkg=do_make_gpkg,
+            do_make_tiff=do_make_tiff
+        )
+        
+    def __repr__(self):
+        """Representation of the SWOT_PROJECT object"""
+        text = f"Class SWOT_PROJECT():"
+        for key, item in self.__dict__.items():
+            if key == 'Downloader':
+                text += f"\n\t{key}: Downloader object"
+                for k, i in self.Downloader.__dict__.items():
+                    if k == 'results':
+                        if i is not None:
+                            text += f"\n\t\t{k}: {len(i)} granules"
+                        if self.Downloader.passes is not None:
+                            text += f" within {self.Downloader.passes} passes"
+                    elif self.Downloader.results is not None and k == "passes":
+                        pass
+                    else:
+                        text += f"\n\t\t{k}: {i}"
+            elif key == 'Rasterizer':
+                text += f"\n\t{key}: Rasterizer object"
+                for k, i in self.Rasterizer.__dict__.items():
+                    if k == 'AOI':
+                        text += f"\n\t\t{k}: {i.geometry[0]}"
+                    elif key == 'meta_swot':
+                        text += f"\n\t\t{k}: {type(i)}"
+                    else:
+                        text += f"\n\t\t{k}: {i}"
+            elif key == 'AOI':
+                text += f"\n\t{key}: {item.geometry[0]}"
+            else:
+                text += f"\n\t{key}: {item}"
+        return text
                
     def check_paths(self):
-        """_summary_
+        """check if the paths exist and create them if they don't
         """
         if self.workspace.exists() is False:
             self.workspace.mkdir()
@@ -87,20 +200,6 @@ class SWOT_PROJECT():
             self.AUX_PATH.mkdir()
         if self.SWOT_PATH.exists() is False:
             self.SWOT_PATH.mkdir()
-        if self.S6_PATH.exists() is False:
-            self.S6_PATH.mkdir()
-        if self.S1_PATH.exists() is False:
-            self.S1_PATH.mkdir()
-        if self.S2_PATH.exists() is False:
-            self.S2_PATH.mkdir()
-        if self.S3_PATH.exists() is False:
-            self.S3_PATH.mkdir()
-        if self.JASON_PATH.exists() is False:
-            self.JASON_PATH.mkdir()
-        if self.FABDEM_PATH.exists() is False:
-            self.FABDEM_PATH.mkdir()
-        if self.INSITU_PATH.exists() is False:
-            self.INSITU_PATH.mkdir
         if self.PATH_GPKG.exists() is False:
             self.PATH_GPKG.mkdir()
         if self.TIFF_PATH.exists() is False:
@@ -116,32 +215,28 @@ class SWOT_PROJECT():
         """define the paths of the project
         """
         self.PROJECT_PATH : Path = self.workspace.joinpath(self.project)
-        self.SWOT_PATH : Path = self.data_path.joinpath('SWOT', self.project)
+        self.SWOT_PATH : Path = self.data_path.joinpath('SWOT')
         self.AUX_PATH : Path = self.PROJECT_PATH.joinpath('aux_data')
-        self.S6_PATH : Path = self.data_path.joinpath('S6', self.project)
-        self.S1_PATH : Path = self.data_path.joinpath('S1', self.project)
-        self.S2_PATH : Path = self.data_path.joinpath('S2', self.project)
-        self.S3_PATH : Path = self.data_path.joinpath('S3', self.project)
-        self.JASON_PATH : Path = self.data_path.joinpath('JASON', self.project)
-        self.FABDEM_PATH : Path = self.data_path.joinpath('FABDEM', self.project)
-        self.INSITU_PATH : Path = self.data_path.joinpath('insitu', self.project)
         self.PATH_GPKG : Path = self.PROJECT_PATH.joinpath('gpkg_combined')
         self.TIFF_PATH : Path = self.PROJECT_PATH.joinpath('rasters')
         self.PLOT_PATH : Path = self.PROJECT_PATH.joinpath('plots')
         
     def open_aoi(self, aoi: str, aoi_crs: str=None):
-        """_summary_
+        """open the AOI file and set the BBOX
 
         Args:
-            aoi (str): _description_
-            aoi_crs (str): _description_
+            aoi (str): string with the name of the AOI file path
+            aoi_crs (str): string with the CRS of the AOI. Defaults to None.
         """
         if aoi_crs is None:
             aoi_crs = self.CRS
         
         AOI_PATH : Path = self.AUX_PATH.joinpath(aoi)
         if AOI_PATH.suffix in ['.shp', '.geojson', '.gpkg', '.kml', '.json']:
-            self.AOI : gpd.GeoDataFrame = gpd.read_file(AOI_PATH, crs=aoi_crs)
+            if AOI_PATH.suffix == '.gpkg':
+                self.AOI : gpd.GeoDataFrame = gpd.read_file(AOI_PATH).to_crs(aoi_crs)
+            else:
+                self.AOI : gpd.GeoDataFrame = gpd.read_file(AOI_PATH, crs=aoi_crs)
         elif isinstance(aoi, dict):
             self.AOI : gpd.GeoDataFrame = gpd.GeoDataFrame(index=[0], geometry=[shape(aoi)], crs=aoi_crs)
         

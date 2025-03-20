@@ -29,6 +29,8 @@ class Downloader():
             nodes (int, optional): number of nodes to use for parallel download. Defaults to 4.
         """
         self.download_path = download_path
+        self.download_type = download_type
+        self.passes = passes
         self.first_time = first_time
         self.last_time = last_time
         AOI = AOI.to_crs(4326)
@@ -41,15 +43,27 @@ class Downloader():
         self.nodes = nodes
         
         self.results = None
-        self.passes = passes
-        
-        self.download_type = download_type
         
         if do_download:
             self.automatic_download()
         else:
             print('No automatic download, please use the Downloader object to download the data')
         
+    def __repr__(self):
+        """Representation of the Downloader object"""
+        text = f"Class Downloader():"
+        for key, item in self.__dict__.items():
+            if key == 'results':
+                if item is not None:
+                    text += f"\n\t{key}: {len(item)} granules"
+                if self.passes is not None:
+                    text += f" within {self.passes} passes"
+            elif self.results is not None and key == "passes":
+                pass
+            else:
+                text += f"\n\t{key}: {item}"
+        return text
+    
     def search_data(self, short_name:str):
         """main function to search data from the Earth Engine API
         
