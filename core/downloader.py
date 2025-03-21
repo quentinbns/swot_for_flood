@@ -151,7 +151,7 @@ class Downloader():
             raise Exception('No data to download, please search data first')
         
         # Create a ThreadPoolExecutor with parallel processes
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.nodes) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.nodes)) as executor:
             # Submit the download tasks to the executor
             futures = [executor.submit(self.download, item) for item in self.results]
             

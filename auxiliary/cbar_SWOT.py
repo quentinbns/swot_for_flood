@@ -55,4 +55,4 @@ def defined_SWOT_cmap():
 
     normalizer_SWOT = matplotlib.colors.Normalize(vmin=0, vmax=255)
     
-    return cmap_SWOT, normalizer_SWOT, boundaries_SWOT, ticks_SWOT, tick_labels_SWOT
+    return cmap_SWOT, normalizer_SWOT, boundaries_SWOT, ticks_SWOT, tick_labels_SWOT, values_SWOT

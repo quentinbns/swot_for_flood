@@ -54,6 +54,7 @@ class SWOT_PROJECT():
                    - do_download (bool, optional): flag to download the data. Defaults to False.
                    - download_type (str, optional): type of download. Defaults to 'PIXC'.
                    - variables (List[str], optional): list of variables to download. Defaults to DEFAULT_VARIABLES.
+                   - pixel_resolution (float, optional): pixel resolution of the raster. Defaults to 10.
                    - gdal_grid_options (dict, optional): dictionary with the gdal_grid options. Defaults to dict().
                    - gdal_merge_options (dict, optional): dictionary with the gdal_merge options. Defaults to dict().
                    - GDAL_NUM_THREADS (int, optional): number of threads to use in GDAL. Defaults to 4.
@@ -88,7 +89,7 @@ class SWOT_PROJECT():
                 param_dict['do_make_tiff'] = param_dict['do_make_tiff'] == 'True'
             if 'tile_names_selection' in param_dict.keys():
                 lst_tile = list()
-                for tile_str in param_dict['tile_names_selection'][1:-1].split(', '):
+                for tile_str in param_dict['tile_names_selection'][1:-1].split('], ['):
                     lst = [str(i) for i in tile_str[1:-1].split(',')]
                     lst_tile.append(lst)
                 param_dict['tile_names_selection'] = lst_tile
@@ -119,6 +120,7 @@ class SWOT_PROJECT():
         GDAL_CACHEMAX : int = param_dict.get('gdal_cachemax', 1024)
         do_make_gpkg : bool = param_dict.get('do_make_gpkg', False)
         do_make_tiff : bool = param_dict.get('do_make_tiff', False)
+        pixel_resolution : float = param_dict.get('pixel_resolution', 10)
 
         # initialize the paths
         self.define_paths()
@@ -150,6 +152,7 @@ class SWOT_PROJECT():
             CRS=self.CRS,
             variables=self.variables,
             tile_names_selection= self.tile_names_selection,
+            pixel_resolution = pixel_resolution,
             gdal_grid_options=gdal_grid_options,
             gdal_merge_options=gdal_merge_options,
             GDAL_NUM_THREADS=GDAL_NUM_THREADS,
@@ -192,6 +195,8 @@ class SWOT_PROJECT():
     def check_paths(self):
         """check if the paths exist and create them if they don't
         """
+        if self.data_path.joinpath('SWOT').exists() is False:
+            self.data_path.joinpath('SWOT').mkdir()
         if self.workspace.exists() is False:
             self.workspace.mkdir()
         if self.data_path.exists() is False:
@@ -215,7 +220,7 @@ class SWOT_PROJECT():
         """define the paths of the project
         """
         self.PROJECT_PATH : Path = self.workspace.joinpath(self.project)
-        self.SWOT_PATH : Path = self.data_path.joinpath('SWOT')
+        self.SWOT_PATH : Path = self.data_path.joinpath('SWOT', self.project)
         self.AUX_PATH : Path = self.PROJECT_PATH.joinpath('aux_data')
         self.PATH_GPKG : Path = self.PROJECT_PATH.joinpath('gpkg_combined')
         self.TIFF_PATH : Path = self.PROJECT_PATH.joinpath('rasters')

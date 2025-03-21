@@ -79,5 +79,5 @@ def defined_ESAWC_cmap():
 
     normalizer_ESAWC = matplotlib.colors.Normalize(vmin=0, vmax=255)
     
-    return cmap_ESAWC, normalizer_ESAWC, boundaries_ESAWC, ticks_ESAWC, tick_labels_ESAWC
+    return cmap_ESAWC, normalizer_ESAWC, boundaries_ESAWC, ticks_ESAWC, tick_labels_ESAWC, values_ESAWC
 

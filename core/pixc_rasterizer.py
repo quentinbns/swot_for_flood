@@ -24,6 +24,7 @@ class Rasterizer():
         CRS:str,
         variables:List[str],
         tile_names_selection:List[str]=list(),
+        pixel_resolution:float=10,
         gdal_grid_options:dict=dict(),
         gdal_merge_options:dict=dict(),
         GDAL_NUM_THREADS:int=4,
@@ -44,6 +45,7 @@ class Rasterizer():
             CRS (str): EPSG code of the projection
             variables (List[str]): list of variables to rasterize
             tile_names_selection (List[str], optional): list of tile names to select. Defaults to list().
+            pixel_resolution (float, optional): resolution of the pixel. Defaults to 10.
             gdal_grid_options (dict, optional): dictionary with the gdal_grid options. Defaults to dict().
             gdal_merge_options (dict, optional): dictionary with the gdal_merge options. Defaults to dict().
             GDAL_NUM_THREADS (int, optional): number of threads to use. Defaults to 4.
@@ -61,6 +63,7 @@ class Rasterizer():
         self.CRS : str = CRS
         self.variables : List[str] = variables
         self.tile_names_selection: List[str] = tile_names_selection
+        self.pixel_resolution : float = pixel_resolution
         self.gdal_grid_options : dict = gdal_grid_options
         self.gdal_merge_options : dict = gdal_merge_options
         self.GDAL_NUM_THREADS : int = GDAL_NUM_THREADS
@@ -119,15 +122,15 @@ class Rasterizer():
         
         self.list_pixc = [list(self.SWOT_PATH.glob(f'*PIXC*{time}*.nc')) for time in self.list_time_select]
         
-        self.meta_swot = xr.open_dataset(self.list_pixc[0][1])
+        self.meta_swot = xr.open_dataset(self.list_pixc[0][0])
     
     def find_number_pixels(self) -> None:
         """Find the number of pixels in the SWOT data
         """
         self.ulx, self.uly, self.lrx, self.lry = self.AOI.total_bounds
         
-        self.nrow = np.ceil((self.lrx - self.ulx) / 10)
-        self.ncol = np.ceil((self.lry - self.uly) / 10)
+        self.ncol = np.ceil((self.lrx - self.ulx) / self.pixel_resolution)
+        self.nrow = np.ceil((self.lry - self.uly) / self.pixel_resolution)
         
         self.psx = (self.lrx - self.ulx) / self.ncol
         self.psy = (self.lry - self.uly) / self.nrow
@@ -144,9 +147,13 @@ class Rasterizer():
         list_pixc_per_tile = []
         for tile_names in self.tile_names_selection:
             for lst in self.list_pixc:
-                list_pixc = [pixc for pixc in lst if tile_names[0] in pixc.name]
-                list_pixc_per_tile.append(list_pixc)
-        
+                list_pixc = []
+                for tile in tile_names:
+                    lst_found = [pixc for pixc in lst if tile in pixc.name]
+                    if lst_found != []:
+                        list_pixc += lst_found
+                if list_pixc != []:
+                    list_pixc_per_tile.append(list_pixc)
         
         # loop over the list of pixc per tile to make on gpkg of selected variables per tile combining all the pixc
         for list_pixc_item in list_pixc_per_tile:
@@ -210,28 +217,28 @@ class Rasterizer():
                     geometry=gpd.points_from_xy(
                         SWOT_im.longitude.values[darkwater_filter],
                         SWOT_im.latitude.values[darkwater_filter]
-                        )
+                        ),
+                    crs='EPSG:4326'
                     )
-                SWOT_im = SWOT_im[SWOT_im.geometry.within(self.AOI.to_crs(epsg=4326))]
-                SWOT_im = SWOT_im.set_crs(epsg=4326)
+                aoi = gpd.GeoDataFrame(geometry=self.AOI.to_crs(4326).geometry, crs='EPSG:4326')
+                SWOT_im = SWOT_im.sjoin(aoi, predicate='within')
                 SWOT_im = SWOT_im.to_crs(epsg=self.CRS)
                 SWOT_im = SWOT_im.dropna(subset=['latitude', 'longitude'])
                 
                 SWOT_im_list.append(SWOT_im)
-            
             if len(SWOT_im_list) > 0:
                 SWOT_combined = pd.concat(SWOT_im_list, ignore_index=True)
                 SWOT_combined = SWOT_combined.drop_duplicates(subset=['latitude', 'longitude'], keep='first')
             else:
                 SWOT_combined = SWOT_im_list[0]    
             
-            SWOT_combined.to_file(self.PATH_GPKG.join(f"SWOT_epsg{self.CRS}_{tile.name.split('_')[7]}.gpkg"), driver='GPKG')
+            SWOT_combined.to_file(self.PATH_GPKG.joinpath(f"SWOT_epsg{self.CRS}_{tile.name.split('_')[7]}.gpkg"), driver='GPKG')
     
     def gpkg_to_tiff(self) -> None:
         """Rasterize the SWOT data into tiff files
         """
-        list_gpkg = self.PATH_GPKG.glob("*.gpkg")
-        if len(list(list_gpkg)) == 0:
+        list_gpkg = list(self.PATH_GPKG.glob('*.gpkg'))
+        if len(list_gpkg) == 0:
             raise ValueError("No geopackage files found, please generate them with picx_to_gpkg() method or check the PATH_GPKG")
         
         print(">>> Converting the SWOT geopackage to tiff")
@@ -246,7 +253,7 @@ class Rasterizer():
             tiff_gpkg = []
             for var in self.variables:
                 print(">>> Generate tiff for ", var)
-                tif_output = self.TIFF_PATH.join(var, f"{gdf_path.name.split('.')[0]}_{var}.tif")
+                tif_output = str(self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif"))
                 tiff_gpkg.append(tif_output)
                 # GDAL Grid algorithm that perform IDW interpolation
                 # clip the output to the polygon of poly_cut.gpkg, fid = 1 using -clipsrcwhere -clipsrc and -clipsrclayer option
@@ -255,10 +262,10 @@ class Rasterizer():
                 radius = self.gdal_grid_options.get('radius', 50.)
                 max_points = self.gdal_grid_options.get('max_points', 20.)
                 nodata = self.gdal_grid_options.get('nodata', -9999.)
-                cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.nrow} {self.ncol} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
+                cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
                 
                 print(cmd)
-                os.system(cmd)
+                # os.system(cmd)
             list_tiff.append(tiff_gpkg)
             
         list_tiff = list_tiff[::-1]
@@ -267,7 +274,7 @@ class Rasterizer():
             print("Working on ", gpkg)
             print("file to treat:", list_var_tiff)
             
-            output = os.path.join(self.TIFF_PATH, f"{gpkg.name.split('.')[0]}_combined.tif")
+            output = str(self.TIFF_PATH.joinpath(f"{gpkg.name.split('.')[0]}_combined.tif"))
             nodata = self.gdal_merge_options.get('nodata', int(-9999))
             nodata_str = str(self.gdal_merge_options.get('nodata', int(-9999))) + " "
             type_tiff = self.gdal_merge_options.get('type', 'Float32')
@@ -286,14 +293,14 @@ class Rasterizer():
             interp (str, optional): interpolation method for gdalwarp. Defaults to None.
         """
         print(">>> Converting the AUXILARY rasters to tiff")
-        output = self.AUX_PATH.join(raster.name.split('.')[0] + f"_epsg{self.CRS}_nrow{self.nrow}_ncol{self.ncol}.tif")
+        output = self.AUX_PATH.joinpath(raster.name.split('.')[0] + f"_nrow{int(self.nrow)}_ncol{int(self.ncol)}.tif")
         
         if interp is None:
             interp = "bilinear"
             if "wc" in raster.name.lower() or "worldcover" in raster.name.lower():
                 interp = "near"
         
-        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -te {self.ulx} {self.lrx} {self.uly} {self.lry} -ts {self.nrow} {self.ncol} -r {interp} -of GTiff {raster} {output}"
+        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -ts {self.ncol} {self.nrow} -r {interp} -of GTiff {raster} {output}"
         
         print(cmd)
         os.system(cmd)

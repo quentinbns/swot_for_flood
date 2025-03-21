@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# project stuff
+rasters
+gpkg_combined
+data
