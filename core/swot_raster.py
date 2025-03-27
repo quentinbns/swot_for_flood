@@ -223,7 +223,6 @@ class SWOT_MEAN():
         self.swot_dates = [None for raster in self.swot_paths]
         self.swot_rasters = [None for raster in self.swot_paths]
         self.swot_mean = None
-        self.combined_raster = None
         
         self.find_swot_rasters()
     
@@ -328,3 +327,129 @@ class SWOT_MEAN():
         self.mask_urban_flood = self.swot_mean_flood.where(condition_urban)
         self.mask_forest_flood = self.swot_mean_flood.where(condition_forest)
         self.mask_open_flood = self.swot_mean_flood.where(condition_open)
+        
+
+class SWOT_COLLECTION():
+    """ Class to handle multiple SWOT Raster data and calculate the mean """
+    def __init__(
+        self,
+        swot_flood_paths:List[Path|str],
+        swot_dry_paths:List[Path|str],
+        variables: List[str],
+        AOI: gdp.GeoDataFrame,
+        floodmask:gdp.GeoDataFrame=None,
+        controlmask:gdp.GeoDataFrame=None,
+        ESA_WC_PATH:Path=None,
+        raster_crs:str='EPSG:4326'
+        ) -> None:
+        self.swot_flood_paths = swot_flood_paths
+        self.swot_dry_paths = swot_dry_paths
+        self.variables = variables
+        self.AOI = AOI
+        self.raster_crs = raster_crs
+        self.controlmask = controlmask
+        self.floodmask = floodmask
+        self.ESA_WC_PATH = ESA_WC_PATH
+        
+        self.swot_flood_dates = [None for raster in self.swot_flood_paths]
+        self.swot_dry_dates = [None for raster in self.swot_dry_paths]
+        self.swot_flood_rasters = [None for raster in self.swot_flood_paths]
+        self.swot_dry_rasters = [None for raster in self.swot_dry_paths]
+        self.swot_mean = None
+        
+        self.find_swot_rasters()
+        
+    @staticmethod
+    def find_swot_paths(paths):
+        """ Find the SWOT Raster data """
+        for raster_path in paths:
+            if not Path(raster_path).exists():
+                raise ValueError(f"Path {raster_path} does not exist")
+        
+        swot_dates = [raster.name.split('_')[-2] for raster in paths]
+        swot_dates = [datetime.strptime(date, "%Y%m%dT%H%M%S") for date in swot_dates] 
+        
+        return swot_dates
+    
+    def find_swot_rasters(self):
+        """ Find the SWOT Raster data """
+        self.swot_flood_dates = self.find_swot_paths(self.swot_flood_paths)
+        self.swot_dry_dates = self.find_swot_paths(self.swot_dry_paths)
+    
+    def open_rasters(self):
+        """ Open both flood and dry SWOT Raster data """
+        dict_swot_param = {
+            "path_to_swot_raster": None,
+            "variables": self.variables,
+            "AOI": self.AOI,
+            "floodmask": self.floodmask,
+            "controlmask": self.controlmask,
+            "ESA_WC_PATH": self.ESA_WC_PATH,
+            "raster_crs": self.raster_crs,
+        }
+        for ii, swot_raster_path in enumerate(self.swot_flood_paths):
+            print(f"Opening SWOT raster at time: {self.swot_flood_dates[ii]}")
+            dict_swot_param["path_to_swot_raster"] = swot_raster_path
+            self.swot_flood_rasters[ii] = SWOT_RASTER(**dict_swot_param)
+            self.swot_flood_rasters[ii].read_raster()
+            if ii == 0:
+                self.ESA_WC = self.swot_flood_rasters[ii].ESA_WC
+                self.ESA_WC_CONTROL = self.swot_flood_rasters[ii].ESA_WC_CONTROL
+                self.ESA_WC_FLOOD = self.swot_flood_rasters[ii].ESA_WC_FLOOD
+        
+        for ii, swot_raster_path in enumerate(self.swot_dry_paths):
+            print(f"Opening SWOT raster at time: {self.swot_dry_dates[ii]}")
+            dict_swot_param["path_to_swot_raster"] = swot_raster_path
+            self.swot_dry_rasters[ii] = SWOT_RASTER(**dict_swot_param)
+            self.swot_dry_rasters[ii].read_raster()
+        
+        self.concat_rasters()
+        
+    def concat_rasters(self):
+        """ Fusion the SWOT Rasters data """
+        self.swot_flood_rasters = xr.concat([raster.SWOT_RASTER for raster in self.swot_flood_rasters], dim='time')
+        self.swot_dry_rasters = xr.concat([raster.SWOT_RASTER for raster in self.swot_dry_rasters], dim='time')
+        
+    def compute_mean(self):
+        """ Create a mean only for dry raster of the SWOT Rasters data """
+        self.swot_mean = self.swot_dry_rasters.mean(dim='time')
+    
+    @staticmethod
+    def mask_worldcover(WC_array, SWOT_array):
+        """ Mask SWOT data with the world cover data """
+        condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
+        condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
+        condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
+        condition_open = np.logical_and(
+            ~ condition_forest,
+            ~ condition_urban,
+            ~ condition_permament_water
+            )
+        SWOT_urban = SWOT_array.where(condition_urban)
+        SWOT_forest = SWOT_array.where(condition_forest)
+        SWOT_open = SWOT_array.where(condition_open)
+        return SWOT_urban, SWOT_forest, SWOT_open
+        
+    def make_mask_worldcover(self):
+        """ Mask SWOT data with the world cover data """
+        self.swot_mean_control = self.swot_mean.rio.clip(self.controlmask.geometry)
+        self.swot_mean_flood = self.swot_mean.rio.clip(self.floodmask.geometry)
+        
+        self.swot_flood_control = self.swot_flood_rasters.rio.clip(self.controlmask.geometry)
+        self.swot_flood_flood = self.swot_flood_rasters.rio.clip(self.floodmask.geometry)
+        
+        self.swot_dry_control = self.swot_dry_rasters.rio.clip(self.controlmask.geometry)
+        self.swot_dry_flood = self.swot_dry_rasters.rio.clip(self.floodmask.geometry)
+        
+        self.mask_urban_mean_global, self.mask_forest_mean_global, self.mask_open_mean_global = self.mask_worldcover(self.ESA_WC, self.swot_mean)
+        self.mask_urban_mean_control, self.mask_forest_mean_control, self.mask_open_mean_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_mean_control)
+        self.mask_urban_mean_flood, self.mask_forest_mean_flood, self.mask_open_mean_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_mean_flood)
+        
+        self.mask_urban_flood_global, self.mask_forest_flood_global, self.mask_open_flood_global = self.mask_worldcover(self.ESA_WC, self.swot_flood_rasters)
+        self.mask_urban_flood_control, self.mask_forest_flood_control, self.mask_open_flood_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_flood_control)
+        self.mask_urban_flood_flood, self.mask_forest_flood_flood, self.mask_open_flood_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_flood_flood)
+        
+        self.mask_urban_dry_global, self.mask_forest_dry_global, self.mask_open_dry_global = self.mask_worldcover(self.ESA_WC, self.swot_dry_rasters)
+        self.mask_urban_dry_control, self.mask_forest_dry_control, self.mask_open_dry_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_dry_control)
+        self.mask_urban_dry_flood, self.mask_forest_dry_flood, self.mask_open_dry_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_dry_flood)
+        
