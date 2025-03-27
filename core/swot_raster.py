@@ -92,13 +92,21 @@ class SWOT_RASTER():
         
     def clip_swot_raster(self):
         """ Clip the SWOT raster data to the AOI """
-        self.SWOT_CONTROL_MASK = self.SWOT_RASTER.rio.clip(self.controlmask.geometry)
-        self.SWOT_FLOOD_MASK = self.SWOT_RASTER.rio.clip(self.floodmask.geometry)
+        self.SWOT_CONTROL_MASK = None
+        self.SWOT_FLOOD_MASK = None
+        if self.controlmask is not None:
+            self.SWOT_CONTROL_MASK = self.SWOT_RASTER.rio.clip(self.controlmask.geometry)
+        if self.floodmask is not None:
+            self.SWOT_FLOOD_MASK = self.SWOT_RASTER.rio.clip(self.floodmask.geometry)
     
     def clip_worldcover(self):
         """ Clip the world cover data to the AOI """
-        self.ESA_WC_CONTROL = self.ESA_WC.rio.clip(self.controlmask.geometry)
-        self.ESA_WC_FLOOD = self.ESA_WC.rio.clip(self.floodmask.geometry)
+        self.ESA_WC_CONTROL = None
+        self.ESA_WC_FLOOD = None
+        if self.controlmask is not None:
+            self.ESA_WC_CONTROL = self.ESA_WC.rio.clip(self.controlmask.geometry)
+        if self.floodmask is not None:
+            self.ESA_WC_FLOOD = self.ESA_WC.rio.clip(self.floodmask.geometry)
     
     def get_swot_variable(self, variable:str):
         """ Get the SWOT variable from the SWOT Raster data
@@ -118,7 +126,7 @@ class SWOT_RASTER():
         """
         if self.ESA_WC_PATH is None:
             raise ValueError("No path to the world cover data")
-        self.ESA_WC = rxr.open_rasterio(self.ESA_WC_PATH, band_as_variable=True)
+        self.ESA_WC = rxr.open_rasterio(self.ESA_WC_PATH, band_as_variable=True, chunks="auto")
         self.ESA_WC.rio.write_crs(self.raster_crs, inplace=True)
         
     
