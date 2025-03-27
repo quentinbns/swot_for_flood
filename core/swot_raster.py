@@ -149,6 +149,22 @@ class SWOT_RASTER():
             return False
         return True
     
+    @staticmethod
+    def mask_worldcover(WC_array, SWOT_array):
+        """ Mask SWOT data with the world cover data """
+        condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
+        condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
+        condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
+        condition_open = np.logical_and(
+            ~ condition_forest,
+            ~ condition_urban,
+            ~ condition_permament_water
+            )
+        SWOT_urban = SWOT_array.where(condition_urban)
+        SWOT_forest = SWOT_array.where(condition_forest)
+        SWOT_open = SWOT_array.where(condition_open)
+        return SWOT_urban, SWOT_forest, SWOT_open
+    
     def make_mask_worldcover(self):
         """ Make the mask of the world cover data
         """
@@ -161,43 +177,9 @@ class SWOT_RASTER():
         if not self.check_dims(self.ESA_WC_FLOOD, self.SWOT_FLOOD_MASK):
             raise ValueError("[FLOOD MASK] The shape of the SWOT Raster and the World Cover data are not the same")
         
-        condition_forest = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        self.mask_urban_global = self.SWOT_RASTER.where(condition_urban)
-        self.mask_forest_global = self.SWOT_RASTER.where(condition_forest)
-        self.mask_open_global = self.SWOT_RASTER.where(condition_open)
-        
-        
-        condition_forest = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        self.mask_urban_control = self.SWOT_CONTROL_MASK.where(condition_urban)
-        self.mask_forest_control = self.SWOT_CONTROL_MASK.where(condition_forest)
-        self.mask_open_control = self.SWOT_CONTROL_MASK.where(condition_open)
-        
-        condition_forest = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        self.mask_urban_flood = self.SWOT_FLOOD_MASK.where(condition_urban)
-        self.mask_forest_flood = self.SWOT_FLOOD_MASK.where(condition_forest)
-        self.mask_open_flood = self.SWOT_FLOOD_MASK.where(condition_open)
-    
+        self.mask_urban_global, self.mask_forest_global, self.mask_open_global = self.mask_worldcover(self.ESA_WC, self.SWOT_RASTER)
+        self.mask_urban_control, self.mask_forest_control, self.mask_open_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.SWOT_CONTROL_MASK)
+        self.mask_urban_flood, self.mask_forest_flood, self.mask_open_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.SWOT_FLOOD_MASK)
         
         
 class SWOT_MEAN():
@@ -288,45 +270,28 @@ class SWOT_MEAN():
         self.swot_mean_control = self.swot_mean.rio.clip(self.controlmask.geometry)
         self.swot_mean_flood = self.swot_mean.rio.clip(self.floodmask.geometry)
         self.make_mask_worldcover()
+    
+    @staticmethod
+    def mask_worldcover(WC_array, SWOT_array):
+        """ Mask SWOT data with the world cover data """
+        condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
+        condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
+        condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
+        condition_open = np.logical_and(
+            ~ condition_forest,
+            ~ condition_urban,
+            ~ condition_permament_water
+            )
+        SWOT_urban = SWOT_array.where(condition_urban)
+        SWOT_forest = SWOT_array.where(condition_forest)
+        SWOT_open = SWOT_array.where(condition_open)
+        return SWOT_urban, SWOT_forest, SWOT_open
         
     def make_mask_worldcover(self):
         """ Make the mask of the world cover data """
-        condition_forest = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        
-        self.mask_urban_global = self.swot_mean.where(condition_urban)
-        self.mask_forest_global = self.swot_mean.where(condition_forest)
-        self.mask_open_global = self.swot_mean.where(condition_open)
-        
-        condition_forest = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC_CONTROL['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        self.mask_urban_control = self.swot_mean_control.where(condition_urban)
-        self.mask_forest_control = self.swot_mean_control.where(condition_forest)
-        self.mask_open_control = self.swot_mean_control.where(condition_open)
-        
-        condition_forest = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_urban = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_permament_water = self.ESA_WC_FLOOD['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        self.mask_urban_flood = self.swot_mean_flood.where(condition_urban)
-        self.mask_forest_flood = self.swot_mean_flood.where(condition_forest)
-        self.mask_open_flood = self.swot_mean_flood.where(condition_open)
+        self.mask_urban_global, self.mask_forest_global, self.mask_open_global = self.mask_worldcover(self.ESA_WC, self.swot_mean)
+        self.mask_urban_control, self.mask_forest_control, self.mask_open_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_mean_control)
+        self.mask_urban_flood, self.mask_forest_flood, self.mask_open_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_mean_flood)
         
 
 class SWOT_COLLECTION():
@@ -351,10 +316,10 @@ class SWOT_COLLECTION():
         self.floodmask = floodmask
         self.ESA_WC_PATH = ESA_WC_PATH
         
-        self.swot_flood_dates = [None for raster in self.swot_flood_paths]
-        self.swot_dry_dates = [None for raster in self.swot_dry_paths]
-        self.swot_flood_rasters = [None for raster in self.swot_flood_paths]
-        self.swot_dry_rasters = [None for raster in self.swot_dry_paths]
+        self.swot_flood_dates = [None for _ in self.swot_flood_paths]
+        self.swot_dry_dates = [None for _ in self.swot_dry_paths]
+        self.swot_flood_rasters = [None for _ in self.swot_flood_paths]
+        self.swot_dry_rasters = [None for _ in self.swot_dry_paths]
         self.swot_mean = None
         
         self.find_swot_rasters()
@@ -397,59 +362,9 @@ class SWOT_COLLECTION():
                 self.ESA_WC_CONTROL = self.swot_flood_rasters[ii].ESA_WC_CONTROL
                 self.ESA_WC_FLOOD = self.swot_flood_rasters[ii].ESA_WC_FLOOD
         
-        for ii, swot_raster_path in enumerate(self.swot_dry_paths):
-            print(f"Opening SWOT raster at time: {self.swot_dry_dates[ii]}")
-            dict_swot_param["path_to_swot_raster"] = swot_raster_path
-            self.swot_dry_rasters[ii] = SWOT_RASTER(**dict_swot_param)
-            self.swot_dry_rasters[ii].read_raster()
+        self.swot_mean = SWOT_MEAN(self.swot_dry_paths, self.variables, self.AOI, self.floodmask, self.controlmask, self.ESA_WC_PATH, self.raster_crs)
+        self.swot_mean.open_rasters()
+        self.swot_mean.compute_mean()
         
         self.concat_rasters()
-        
-    def concat_rasters(self):
-        """ Fusion the SWOT Rasters data """
-        self.swot_flood_rasters = xr.concat([raster.SWOT_RASTER for raster in self.swot_flood_rasters], dim='time')
-        self.swot_dry_rasters = xr.concat([raster.SWOT_RASTER for raster in self.swot_dry_rasters], dim='time')
-        
-    def compute_mean(self):
-        """ Create a mean only for dry raster of the SWOT Rasters data """
-        self.swot_mean = self.swot_dry_rasters.mean(dim='time')
-    
-    @staticmethod
-    def mask_worldcover(WC_array, SWOT_array):
-        """ Mask SWOT data with the world cover data """
-        condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
-        condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
-            )
-        SWOT_urban = SWOT_array.where(condition_urban)
-        SWOT_forest = SWOT_array.where(condition_forest)
-        SWOT_open = SWOT_array.where(condition_open)
-        return SWOT_urban, SWOT_forest, SWOT_open
-        
-    def make_mask_worldcover(self):
-        """ Mask SWOT data with the world cover data """
-        self.swot_mean_control = self.swot_mean.rio.clip(self.controlmask.geometry)
-        self.swot_mean_flood = self.swot_mean.rio.clip(self.floodmask.geometry)
-        
-        self.swot_flood_control = self.swot_flood_rasters.rio.clip(self.controlmask.geometry)
-        self.swot_flood_flood = self.swot_flood_rasters.rio.clip(self.floodmask.geometry)
-        
-        self.swot_dry_control = self.swot_dry_rasters.rio.clip(self.controlmask.geometry)
-        self.swot_dry_flood = self.swot_dry_rasters.rio.clip(self.floodmask.geometry)
-        
-        self.mask_urban_mean_global, self.mask_forest_mean_global, self.mask_open_mean_global = self.mask_worldcover(self.ESA_WC, self.swot_mean)
-        self.mask_urban_mean_control, self.mask_forest_mean_control, self.mask_open_mean_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_mean_control)
-        self.mask_urban_mean_flood, self.mask_forest_mean_flood, self.mask_open_mean_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_mean_flood)
-        
-        self.mask_urban_flood_global, self.mask_forest_flood_global, self.mask_open_flood_global = self.mask_worldcover(self.ESA_WC, self.swot_flood_rasters)
-        self.mask_urban_flood_control, self.mask_forest_flood_control, self.mask_open_flood_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_flood_control)
-        self.mask_urban_flood_flood, self.mask_forest_flood_flood, self.mask_open_flood_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_flood_flood)
-        
-        self.mask_urban_dry_global, self.mask_forest_dry_global, self.mask_open_dry_global = self.mask_worldcover(self.ESA_WC, self.swot_dry_rasters)
-        self.mask_urban_dry_control, self.mask_forest_dry_control, self.mask_open_dry_control = self.mask_worldcover(self.ESA_WC_CONTROL, self.swot_dry_control)
-        self.mask_urban_dry_flood, self.mask_forest_dry_flood, self.mask_open_dry_flood = self.mask_worldcover(self.ESA_WC_FLOOD, self.swot_dry_flood)
         
