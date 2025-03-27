@@ -366,5 +366,3 @@ class SWOT_COLLECTION():
         self.swot_mean.open_rasters()
         self.swot_mean.compute_mean()
         
-        self.concat_rasters()
-        
