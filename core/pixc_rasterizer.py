@@ -6,8 +6,8 @@ import geopandas as gpd
 import numpy as np
 import os
 import xarray as xr
-from auxiliary.tools import interf_coh, noise_to_pixc_index # tools is a module in the auxiliary package of the swot_for_flood package
-
+import re
+from auxiliary.tools import interf_coh, noise_to_pixc_index, filter_versions # tools is a module in the auxiliary package of the swot_for_flood package
 
 class Rasterizer():
     """ Utility class to rasterize the SWOT PIXC data
@@ -145,16 +145,20 @@ class Rasterizer():
         
         # loop over the tiles to make list of pixc per tile
         list_pixc_per_tile = []
-        for tile_names in self.tile_names_selection:
-            for lst in self.list_pixc:
-                list_pixc = []
-                for tile in tile_names:
-                    lst_found = [pixc for pixc in lst if tile in pixc.name]
-                    if lst_found != []:
-                        list_pixc += lst_found
-                if list_pixc != []:
-                    list_pixc_per_tile.append(list_pixc)
-        
+        for tile_lst in self.tile_names_selection:
+            for pixcs in self.list_pixc:
+                decomposed_pixc = ['_'.join(str(pixc.name).split('_')[5:7]) for pixc in pixcs]
+                # check if element in decomposed_pixc is in tile_lst
+                first_selection = np.isin(decomposed_pixc, tile_lst)
+                kept_pixcs = np.array(pixcs)[first_selection].tolist()
+
+                if kept_pixcs != []:
+                    versions = filter_versions(np.unique(['_'.join(str(pixc.name).split('_')[-2:]) for pixc in kept_pixcs]))
+                    for version in versions:
+                        pattern = re.compile(f'.*_{version}')
+                        list_pixc_per_tile.append([pixc for pixc in kept_pixcs if pattern.match(str(pixc.name))])
+            
+        print(list_pixc_per_tile)        
         # loop over the list of pixc per tile to make on gpkg of selected variables per tile combining all the pixc
         for list_pixc_item in list_pixc_per_tile:
             print(">>> Working on :")
@@ -265,7 +269,7 @@ class Rasterizer():
                 cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
                 
                 print(cmd)
-                # os.system(cmd)
+                os.system(cmd)
             list_tiff.append(tiff_gpkg)
             
         list_tiff = list_tiff[::-1]
@@ -300,7 +304,7 @@ class Rasterizer():
             if "wc" in raster.name.lower() or "worldcover" in raster.name.lower():
                 interp = "near"
         
-        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -ts {self.ncol} {self.nrow} -r {interp} -of GTiff {raster} {output}"
+        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -te {self.ulx} {self.uly} {self.lrx} {self.lry} -ts {self.ncol} {self.nrow} -r {interp} -of GTiff {raster} {output}"
         
         print(cmd)
         os.system(cmd)

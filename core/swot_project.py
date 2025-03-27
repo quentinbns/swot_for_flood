@@ -5,7 +5,7 @@ import geopandas as gpd
 from shapely.geometry import shape, box
 
 import configparser
-
+from datetime import datetime
 from core.downloader import Downloader
 from core.pixc_rasterizer import Rasterizer
 
@@ -90,7 +90,7 @@ class SWOT_PROJECT():
             if 'tile_names_selection' in param_dict.keys():
                 lst_tile = list()
                 for tile_str in param_dict['tile_names_selection'][1:-1].split('], ['):
-                    lst = [str(i) for i in tile_str[1:-1].split(',')]
+                    lst = [str(i).strip() for i in tile_str.replace('[','').replace(']','').split(',')]
                     lst_tile.append(lst)
                 param_dict['tile_names_selection'] = lst_tile
             
@@ -253,4 +253,26 @@ class SWOT_PROJECT():
             self.AOI.bounds['maxy'][0]
             )
     
-            
+    def find_raster(self):
+        """find the raster files in the project
+        """
+        self.rasters_list = list(self.TIFF_PATH.glob('*.tif'))
+        
+    def select_date(self, date: str):
+        """select a date in the project raster_list
+
+        Args:
+            date (str): string with the date in the format 'YYYY-MM-DD'
+        """
+        date = datetime.strptime(date, '%Y-%m-%d').strftime('%Y%m%d')
+        return [raster for raster in self.rasters_list if date in raster.name]
+
+    def select_dates(self, dates_list: List[str]):
+        """select a list of dates in the project raster_list
+
+        Args:
+            dates_list (List[str]): list of strings with the dates in the format 'YYYY-MM-DD'
+        """
+        lists = [self.select_date(date) for date in dates_list]
+        return list(set([item for sublist in lists for item in sublist]))
+    
