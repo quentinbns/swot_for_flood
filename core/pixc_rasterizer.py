@@ -31,6 +31,7 @@ class Rasterizer():
         GDAL_CACHEMAX:int=1024,
         do_make_gpkg:bool=False,
         do_make_tiff:bool=False,
+        make_space:bool=False
     )-> None:
         """Initialize the Rasterizer class
         
@@ -52,6 +53,7 @@ class Rasterizer():
             GDAL_CACHEMAX (int, optional): maximum cache size. Defaults to 1024.
             do_make_gpkg (bool, optional): flag to make the geopackage. Defaults to False.
             do_make_tiff (bool, optional): flag to make the tiff files. Defaults
+            make_space (bool, optional): flag to remove the geopackage and tiff files. Defaults to False.
         """
         self.SWOT_PATH : Path = SWOT_PATH
         self.AUX_PATH : Path = AUX_PATH
@@ -68,6 +70,7 @@ class Rasterizer():
         self.gdal_merge_options : dict = gdal_merge_options
         self.GDAL_NUM_THREADS : int = GDAL_NUM_THREADS
         self.GDAL_CACHEMAX : int = GDAL_CACHEMAX
+        self.make_space : bool = make_space
         
         # create the list of tile names if not provided
         if self.tile_names_selection is None:
@@ -87,7 +90,7 @@ class Rasterizer():
         self.find_pixc()
         
         if do_make_gpkg:
-            self.picx_to_gpkg()
+            self.pixc_to_gpkg()
             
         if do_make_tiff:
             self.gpkg_to_tiff()
@@ -271,7 +274,11 @@ class Rasterizer():
                 print(cmd)
                 os.system(cmd)
             list_tiff.append(tiff_gpkg)
-            
+        
+        if self.make_space:
+            print('>>> Removing the geopackage files')
+            self.remove_gpkg()
+        
         list_tiff = list_tiff[::-1]
         print('>>> Generate combined tiff')
         for list_var_tiff, gpkg in zip(list_tiff, list_gpkg):
@@ -287,7 +294,22 @@ class Rasterizer():
             
             print(cmd)
             os.system(cmd)
+            
+        if self.make_space:
+            print('>>> Removing the sub-tiff files')
+            self.remove_tiff()
     
+    def remove_gpkg(self):
+        """Remove the geopackage files
+        """
+        os.rmdir(self.PATH_GPKG)
+    
+    def remove_tiff(self):
+        """ Remove the tiff sub-files
+        """
+        for var in self.variables:
+            os.rmdir(self.TIFF_PATH.joinpath(var))
+        
     def gdalwarp_raster_to_swot_bbox_and_size(self, raster:Path, raster_crs:int, interp:str=None) -> None:
         """Convert the auxiliary raster to tiff with the same resolution  and bounding box as the SWOT tiff
         

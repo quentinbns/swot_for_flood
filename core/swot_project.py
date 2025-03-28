@@ -8,6 +8,7 @@ import configparser
 from datetime import datetime
 from core.downloader import Downloader
 from core.pixc_rasterizer import Rasterizer
+from core.swot_raster import SwotCollection
 
 DEFAULT_VARIABLES = [
     'sig0', 
@@ -26,16 +27,16 @@ DEFAULT_VARIABLES = [
     ]
 
 
-class SWOT_PROJECT():
+class SwotProject():
     """
-    SWOT_PROJECT class to manage the SWOT project
+    SwotProject class to manage the SWOT project
     Can be used to download data, process data, and plot data
     """
     def __init__(
         self, 
         param_dict: dict | configparser.ConfigParser
         ) -> None:
-        """Initialize the SWOT_PROJECT class
+        """Initialize the SwotProject class
 
         Args:
             param_dict (dict or configparser.ConfigParser): dictionary with the parameters of the project
@@ -50,6 +51,8 @@ class SWOT_PROJECT():
                    - aoi_crs (str, optional): string with the CRS of the AOI. Defaults to None.
                    - passes (list, optional): list of SWOT passes to download. Defaults to None.
                    - tile_names_selection (List[str], optional): list of tile names to select. Defaults to None.
+                   - list_dry_dates (List[str], optional): list of dry dates to select. Defaults to None.
+                   - list_flood_dates (List[str], optional): list of flood dates to select. Defaults to None.
                    - nodes (int, optional): number of nodes to use for parallel download. Defaults to 4.
                    - do_download (bool, optional): flag to download the data. Defaults to False.
                    - download_type (str, optional): type of download. Defaults to 'PIXC'.
@@ -81,6 +84,7 @@ class SWOT_PROJECT():
                 param_dict['passes'] = list(map(int, param_dict['passes'][1:-1].split(',')))
             if 'variables' in param_dict.keys():
                 param_dict['variables'] = list(map(str, param_dict['variables'][1:-1].split(',')))
+                param_dict['variables'] = [var.strip() for var in param_dict['variables']]
             if 'do_download' in param_dict.keys():
                 param_dict['do_download'] = param_dict['do_download'] == 'True'
             if 'do_make_gpkg' in param_dict.keys():
@@ -93,6 +97,18 @@ class SWOT_PROJECT():
                     lst = [str(i).strip() for i in tile_str.replace('[','').replace(']','').split(',')]
                     lst_tile.append(lst)
                 param_dict['tile_names_selection'] = lst_tile
+            if 'list_dry_dates' in param_dict.keys():
+                param_dict['list_dry_dates'] = list(map(str, param_dict['list_dry_dates'][1:-1].split(',')))
+                param_dict["list_dry_dates"] = [date.strip() for date in param_dict["list_dry_dates"]]
+            if 'list_flood_dates' in param_dict.keys():
+                param_dict['list_flood_dates'] = list(map(str, param_dict['list_flood_dates'][1:-1].split(',')))
+                param_dict['list_flood_dates'] = [date.strip() for date in param_dict['list_flood_dates']]
+            if 'floodmask_path' in param_dict.keys():
+                param_dict['floodmask_path'] = Path(param_dict['floodmask_path'])
+            if 'controlmask_path' in param_dict.keys():
+                param_dict['controlmask_path'] = Path(param_dict['controlmask_path'])
+            if 'esa_worldcover_path' in param_dict.keys():
+                param_dict['esa_worldcover_path'] = Path(param_dict['esa_worldcover_path'])
             
 
         for key in ['project', 'workspace', 'data_path', 'crs', 'first_time', 'last_time', "aoi"]:
@@ -110,6 +126,11 @@ class SWOT_PROJECT():
         # optional parameters
         self.variables : List[str] = param_dict.get('variables', DEFAULT_VARIABLES)
         self.tile_names_selection : List[str] = param_dict.get('tile_names_selection', list())
+        self.list_dry_dates : List[str] = param_dict.get('list_dry_dates', list())
+        self.list_flood_dates : List[str] = param_dict.get('list_flood_dates', list())
+        self.floodmask_path: Path = param_dict.get('floodmask_path', None)
+        self.controlmask_path: Path = param_dict.get('controlmask_path', None)
+        self.ESA_WC_PATH: Path = param_dict.get('esa_worldcover_path', None)
         do_download : bool = param_dict.get('do_download', False)
         download_type : str = param_dict.get('download_type', 'PIXC')
         passes : List[int] = param_dict.get('passes', None)
@@ -121,6 +142,8 @@ class SWOT_PROJECT():
         do_make_gpkg : bool = param_dict.get('do_make_gpkg', False)
         do_make_tiff : bool = param_dict.get('do_make_tiff', False)
         pixel_resolution : float = param_dict.get('pixel_resolution', 10)
+        
+        self.swot_collection : SwotCollection = None
 
         # initialize the paths
         self.define_paths()
@@ -129,6 +152,14 @@ class SWOT_PROJECT():
         # open the AOI
         self.open_aoi(param_dict.get('aoi'), aoi_crs=param_dict.get('aoi_crs', None))
         
+        # open masks
+        self.floodmask = None
+        self.controlmask = None
+        if self.floodmask_path is not None:
+            self.floodmask = gpd.read_file(self.floodmask_path)
+        if self.controlmask_path is not None:
+            self.controlmask = gpd.read_file(self.controlmask_path)
+            
         # initialize the Downloader and Rasterizer
         self.Downloader = Downloader(
             download_path=self.SWOT_PATH,
@@ -276,3 +307,25 @@ class SWOT_PROJECT():
         lists = [self.select_date(date) for date in dates_list]
         return list(set([item for sublist in lists for item in sublist]))
     
+    def create_collection(self):
+        """create the SWOT_COLLECTION object"""
+        if len(self.list_flood_dates) == 0:
+            raise ValueError("No flood dates selected, please add dates before creating the collection")
+        if len(self.list_dry_dates) == 0:
+            raise ValueError("No dry dates selected, please add dates before creating the collection")
+        
+        list_flood_paths = self.select_dates(self.list_flood_dates)
+        list_dry_paths = self.select_dates(self.list_dry_dates)
+        
+        dict_collection = {
+            "swot_flood_paths": list_flood_paths,
+            "swot_dry_paths": list_dry_paths,
+            "variables": self.variables,
+            "AOI": self.AOI,
+            "raster_crs": self.CRS,    
+            "floodmask":self.floodmask,
+            "controlmask":self.controlmask,
+            "ESA_WC_PATH":self.ESA_WC_PATH,
+        }
+        self.swot_collection = SwotCollection(**dict_collection)
+        self.swot_collection.open_rasters()

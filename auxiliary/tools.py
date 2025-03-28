@@ -29,6 +29,10 @@ def toslant(pixc, key='height'):
     out[az, rng] = var
     return out
 
+def ufunc_where(array:np.ndarray, condition:np.ndarray)->np.ndarray:
+    """ Ufunc version of np.where """
+    return np.where(condition, array, np.zeros_like(array)*np.nan,)
+
 @nb.njit('float32[:,:](int32[:], float32[:], float32[:])', parallel=True)
 def noise_to_pixc_index(noise_index, noise_plus_y, noise_minus_y):
     '''Convert the noise index to the pixel coordinates'''
