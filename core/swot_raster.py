@@ -204,8 +204,8 @@ class SwotMean():
         self.floodmask = floodmask
         self.ESA_WC_PATH = ESA_WC_PATH
         
-        self.swot_dates = [None for raster in self.swot_paths]
-        self.swot_rasters = [None for raster in self.swot_paths]
+        self.swot_dates = [None for _ in self.swot_paths]
+        self.swot_rasters = [None for _ in self.swot_paths]
         self.swot_mean = None
         
         self.find_swot_rasters()
