@@ -177,3 +177,5 @@ cython_debug/
 rasters
 gpkg_combined
 data
+aux_data
+S2A
