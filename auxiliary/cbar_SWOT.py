@@ -46,12 +46,12 @@ def defined_SWOT_cmap():
 
     # sequences needed for an informative colorbar
     values_SWOT = [dico["value"] for dico in DICT_COLOR_SWOT.values()]
+    tick_labels_SWOT = [dico["label"] for dico in DICT_COLOR_SWOT.values()]
 
     boundaries_SWOT = [(values_SWOT[i + 1] + values_SWOT[i]) / 2 for i in range(len(values_SWOT) - 1)]
     boundaries_SWOT = [0] + boundaries_SWOT + [255]
 
     ticks_SWOT = [(boundaries_SWOT[i + 1] + boundaries_SWOT[i]) / 2 for i in range(len(boundaries_SWOT) - 1)]
-    tick_labels_SWOT = [dico["label"] for dico in DICT_COLOR_SWOT.values()]
 
     normalizer_SWOT = matplotlib.colors.Normalize(vmin=0, vmax=255)
     

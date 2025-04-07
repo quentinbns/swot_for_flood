@@ -18,6 +18,7 @@ from cmap import Colormap
 import rioxarray as rxr
 from scipy.ndimage import binary_dilation, binary_erosion
 from skimage import morphology
+from skimage.filters.rank import majority
 
 from time import time
 
@@ -171,6 +172,320 @@ class PlotRaster():
             f1 = 2 * ((precision * recall) / (precision + recall))
         return f1
     
+    def plot_all_rasters(
+        self, 
+        variable:str,
+        cmap:str='viridis',
+        vmin:float=None,
+        vmax:float=None,       
+        ) -> Tuple[plt.Figure, plt.Axes]:
+        """ Uses the raster data to plot all the rasters in a single figure
+        
+        Args:
+            variable (str): the variable to plot
+            cmap (str): the colormap to use. Default is 'viridis'.
+            vmin (float): the minimum value of the colormap. Default is None.
+            vmax (float): the maximum value of the colormap. Default is None.
+        Returns:
+            Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
+        """
+        import rasterio as rio
+        from rasterio.plot import show
+        from datetime import datetime
+        
+        if variable not in self.swot_collection.variables:
+            raise ValueError(f"The variable {variable} is not in the collection")
+        
+        # Get the list of rasters paths
+        self.project.find_raster()
+        list_rasters = self.project.rasters_list
+        list_rasters.sort()
+        
+        index_variable = self.swot_collection.variables.index(variable) + 1
+        
+        ncols = 3
+        nrows = int(np.ceil(len(list_rasters) / ncols))
+        if ncols * nrows < len(list_rasters):
+            nrows += 1
+        fig, axs = plt.subplots(nrows, ncols, figsize=(5*ncols, 5*nrows))
+                
+        for i, raster in enumerate(list_rasters):
+            raster = rio.open(raster)
+            time_str = datetime.strptime(raster.name.split("_")[-2], "%Y%m%dT%H%M%S")
+            data = raster.read(index_variable)
+            trfm = raster.transform
+            ax = axs[i // ncols, i % ncols]
+            show(data, transform=trfm, ax=ax, cmap=cmap, vmin=vmin, vmax=vmax)
+            ax.set_title(time_str.strftime("%Y-%m-%d %H:%M"))
+        
+        for i in range(len(list_rasters), nrows * ncols):
+            fig.delaxes(axs[i // ncols, i % ncols])
+            
+        fig.tight_layout()
+        
+        if self.save_fig:
+            title_str = f"all_rasters_{variable}"
+            path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
+            fig.savefig(path, dpi=300)
+        
+        if self.show_fig:
+            fig.show()
+        return fig, axs
+           
+    def plot_auxiliary_data(
+        self,
+        path_to_raster:Path,
+        data_area:str="global",
+        is_multiband:bool=False,
+        is_worldcover:bool=False,
+        make_mask=False,
+        mask_value:int=0,
+        vmin:float=None,
+        vmax:float=None,
+        cmap:str='grey',
+        title:str=None,
+        fig:plt.Figure=None,
+        ax:plt.Axes=None,
+        dpi:int=300,
+        add_bkg:bool=False,
+        add_cbar:bool=True
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """ Plot the auxiliary data
+        
+        Args:
+            path_to_raster (Path): the path to the raster to plot
+            data_area (str): the area to plot ('global', 'control', 'flood')
+            is_multiband (bool): If True, the raster is a multiband raster. Default is False.
+            is_worldcover (bool): If True, the raster is a world cover raster. Default is False.
+            vmin (float): The minimum value of the colormap. Default is None.
+            vmax (float): The maximum value of the colormap. Default is None.
+            cmap (str): The colormap to use. Default is 'grey'.
+            title (str): The title of the plot. Default is None.
+            fig (plt.Figure): The figure to plot on. Default is None.
+            ax (plt.Axes): The axes to plot on. Default is None.
+            dpi (int): The dpi of the plot to save. Default is 300.
+            add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
+            add_cbar (bool): Add a colorbar. Default is True.
+        Returns:
+            Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
+        """
+        import rasterio as rio
+        from rasterio.plot import show
+        import matplotlib.patches as mpatches
+        
+        if not path_to_raster.exists():
+            raise ValueError(f"The path {path_to_raster} does not exist")
+        
+        if fig is None:
+            map_obj = Maps(crs=self.CRS, figsize=(10, 10))
+            fig = map_obj.f
+            ax = map_obj.f.axes
+        else:
+            map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
+        
+        # get data
+        data = rxr.open_rasterio(path_to_raster)
+        
+        if not is_multiband:
+            data = data.sel(band=1)
+        
+        if is_worldcover:
+            data = data.where(data != 255)
+            cmap_ESAWC, normalizer_ESAWC, boundaries_ESAWC, ticks_ESAWC, tick_labels_ESAWC, values_ESAWC = defined_ESAWC_cmap()
+            cmap = cmap_ESAWC
+            vmin = 0
+            vmax = 255
+        
+        # get the data on the requested time
+        if "time" in data.dims:
+            if data.time.size > 1:
+                print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
+            data = data.isel(time=0)
+        
+        if is_multiband:
+            data = rio.open(path_to_raster)
+            trfm = data.transform
+            
+        if make_mask:
+            data.values = np.where(data.values == mask_value, 1, 0)
+            
+        # Get extent of the data
+        match data_area:
+            case "global":
+                poly = self.BBOX
+                extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+            case "control":
+                poly = self.swot_collection.controlmask
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+            case "flood":
+                poly = self.swot_collection.floodmask
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+        
+        # set extent and crs
+        map_obj.set_extent(extents=extents, crs=self.CRS)
+
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
+        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+
+        # add title
+        if title is not None:
+            map_obj.add_title(title, y=1)
+        else:
+            if 'time' in data.dims:
+                time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
+                if data['time'].size > 1:
+                    time_str = time_str[0]
+                map_obj.add_title(f"Auxiliary data - {time_str}", y=1)
+            else:
+                map_obj.add_title(f"Auxiliary data - {path_to_raster.stem}", y=1)
+            
+        # add background
+        if add_bkg:
+            m_bkg = map_obj.new_layer()
+            m_bkg.add_wms.OpenStreetMap.add_layer.default()
+        
+        # add data
+        m_data = map_obj.new_layer()
+        if not is_multiband:
+            m_data.set_data(data, x="x", y="y", crs=self.CRS)
+            m_data.set_shape.raster()
+            m_data.plot_map(cmap=cmap, vmin=vmin, vmax=vmax)
+        else:
+            show(data, ax=m_data.ax, transform=trfm)
+            
+        if add_cbar and not is_multiband:
+            if not is_worldcover:
+                m_data.add_colorbar(label=data.name, hist_size=0, shrink=0.5, pad=0.05)
+            else:
+                aaxx = map_obj.ax
+                ll = []
+                for value, label in zip(values_ESAWC, tick_labels_ESAWC):
+                    ll.append(mpatches.Patch(color=cmap_ESAWC(value), label=label))
+                
+                aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
+                
+        if self.save_fig:
+            name_stripped = '_'.join(path_to_raster.stem.split(" "))
+            name_stripped = name_stripped.replace("-", "").replace("(", "").replace(")", "").replace(':', "")
+            if 'time' in data.dims:
+                time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
+                if data['time'].size > 1:
+                    time_str = time_str[0]
+                title_str = title if title is not None else f"auxiliary_data_{name_stripped}_{time_str}"
+            else:
+                title_str = title if title is not None else f"auxiliary_data_{name_stripped}"
+            path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
+            m_data.savefig(path, dpi=dpi)
+            
+        if self.show_fig:
+            m_data.show()
+            
+        return map_obj.f, map_obj.f.axes
+         
+    def plot_classification(
+        self,
+        data_area:str="global",
+        time_selection=None,
+        title=None,
+        add_legend:bool=False,
+        dpi:int=300,
+        show_fig:bool=None,
+        save_fig:bool=None,
+        fig:plt.Figure=None,
+        ax:plt.Axes=None,
+        **kwargs
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """ Plot the classification map
+        Args:
+            data_area (str): the area to plot ('global', 'control', 'flood')
+            time_selection (str): the time selection to plot. Default is None.
+            title (str): The title of the plot. Default is None.
+            add_legend (bool): Add a legend to the plot. Default is False.
+            dpi (int): The dpi of the plot to save. Default is 300.
+            show_fig (bool): Show the figure. Default is False.
+            save_fig (bool): Save the figure. Default is False.
+            fig (plt.Figure): The figure to plot on. Default is None.
+            ax (plt.Axes): The axes to plot on. Default is None.
+            **kwargs: Additional arguments to pass to the plotting function
+        Returns:
+            Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
+        """
+        
+        data = self.swot_collection.get_variable("classification", data_area, "swot", None)
+        label_data = self.get_label("classification")
+        if data['time'].size > 1:
+            print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
+        if time_selection is not None:
+            data = data.sel(time=time_selection)
+        data = data.isel(time=0)
+        
+        if save_fig is None:
+            save_fig = self.save_fig
+        if show_fig is None:
+            show_fig = self.show_fig
+            
+        if fig is None:
+            map_obj = Maps(crs=self.CRS, figsize=(10, 10))
+            fig = map_obj.f
+            ax = map_obj.ax
+        else:
+            map_obj = Maps(crs=self.CRS, f=fig, ax=ax)
+            
+        # get extent of the data
+        match data_area:
+            case "global":
+                poly = self.BBOX
+                extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+            case "control":
+                poly = self.swot_collection.controlmask
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+            case "flood":
+                poly = self.swot_collection.floodmask
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+        
+        # create map
+        
+        map_obj.set_extent(extents=extents, crs=self.CRS)
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
+        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+        
+        if title is not None:
+            map_obj.add_title(title, y=1)
+        else:    
+            time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
+            if data['time'].size > 1:
+                time_str = time_str[0]
+            map_obj.add_title(f"{label_data} - {time_str}", y=1)
+            
+        map_obj.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
+        map_obj.set_shape.raster()
+        
+        cmap_SWOT, normalizer_SWOT, _, _, tick_labels_SWOT, values_SWOT = defined_SWOT_cmap()
+        map_obj.plot_map(cmap=cmap_SWOT, norm=normalizer_SWOT, vmin=0, vmax=255, **kwargs)
+        
+        if add_legend:
+            aaxx = map_obj.ax
+            ll = []
+            for value, label in zip(values_SWOT, tick_labels_SWOT):
+                ll.append(mpatches.Patch(color=cmap_SWOT(value), label=label))
+            
+            aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
+            
+        if save_fig:
+            time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
+            if data['time'].size > 1:
+                time_str = time_str[0]
+            title_str = title if title is not None else f"classification_{data_area}_{time_str}"
+            path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
+            fig.savefig(path, dpi=dpi)
+        
+        if show_fig:
+            fig.show()
+            
+        return map_obj.f, map_obj.ax
+        
     def plot_map(
         self,
         variable:str,
@@ -229,17 +544,25 @@ class PlotRaster():
         label_data = self.get_label(variable)
         
         # Get the data on the requested time
-        data = data.sel(time=time_selection)
+        if "time" in data.dims:
+            if time_selection is not None:
+                data = data.sel(time=time_selection)
+                if data['time'].size > 1:
+                    print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
+                data = data.isel(time=0)
         
         # Get extent of the data
         match data_area:
             case "global":
                 poly = self.BBOX
+                extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
             case "control":
-                poly = self.swot_collection.controlmask
+                poly = self.swot_collection.controlmask.to_crs(self.CRS)
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
             case "flood":
-                poly = self.swot_collection.floodmask
-        extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+                poly = self.swot_collection.floodmask.to_crs(self.CRS)
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+                
         
         map_obj = Maps(crs=self.CRS, f=fig, ax=ax)
         map_obj.set_extent(extents=extents, crs=self.CRS)
@@ -306,6 +629,11 @@ class PlotRaster():
         show_fig:bool=None,
         add_xlabel:bool=True,
         add_ylabel:bool=True,
+        y_text:float=0.24,
+        y_text_mean:float=0.05,
+        ha:str='left',
+        va:str='top',
+        ha_mean:str='right',
         **kwargs
         ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the histogram of the variable
@@ -338,15 +666,21 @@ class PlotRaster():
             save_fig = self.save_fig
         if show_fig is None:
             show_fig = self.show_fig
+        
+        if data_type == "diff":
+            add_mean = False
+            print("Warning: The mean data will not be plotted in the histogram with diff data type")
             
         # Get the data
         data = self.swot_collection.get_variable(variable, data_area, data_type, world_cover_selection)
         label_data = self.get_label(variable)
         
         # Get the data on the requested time
-        if time_selection is not None:
-            data = data.sel(time=time_selection)
-        else:
+        if "time" in data.dims:
+            if time_selection is not None:
+                data = data.sel(time=time_selection)
+                if data['time'].size > 1:
+                    print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
             data = data.isel(time=0)
         
         # Set specific color if world_cover_selection is given
@@ -361,7 +695,7 @@ class PlotRaster():
             ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, **kwargs)
         median_data = np.nanmean(data.values.flatten())
         ax.axvline(median_data, color=color, linestyle='dashed', linewidth=1)
-        ax.text(median_data, 0.24, f"Median: {median_data:.2f}", color=color, rotation=90, ha='left', va='top', transform=ax.get_xaxis_transform(),
+        ax.text(median_data, y_text, f"Median: {median_data:.2f}", color=color, rotation=90, ha=ha, va=va, transform=ax.get_xaxis_transform(),
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_mean:
@@ -372,7 +706,7 @@ class PlotRaster():
                 ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, **kwargs)
             median_mean = np.nanmean(mean_data.values.flatten())
             ax.axvline(median_mean, color='grey', linestyle='dashed', linewidth=1)
-            ax.text(median_mean, 0.05, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha='right', transform=ax.get_xaxis_transform(),
+            ax.text(median_mean, y_text_mean, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha=ha_mean, transform=ax.get_xaxis_transform(),
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_xlabel:
@@ -452,10 +786,11 @@ class PlotRaster():
             raise ValueError(f"The variable {variable} is not in the collection")
         if len(world_cover_mask) > 3:
             raise ValueError("The world cover mask must have a maximum of 3 elements")
-        if len(world_cover_mask) == 3:
-            raise ValueError("The world cover mask must have at least one element")
         
-        fig, axs = plt.subplots(3, 3 - len(world_cover_mask), figsize=(15, 15))
+        ncols = 3 - len(world_cover_mask)
+        if ncols == 0:
+            raise ValueError("The world cover mask must have at least one element")
+        fig, axs = plt.subplots(3, ncols, figsize=(15, 15))
 
         list_hist = [
             variable,           
@@ -497,12 +832,10 @@ class PlotRaster():
         fig.tight_layout()
         
         # remove unused axes for plotting the map
-        axs[0, 0].set_visible(False)
-        axs[0, 1].set_visible(False)
-        axs[0, 2].set_visible(False)
-        axs[1, 0].set_visible(False)
-        axs[1, 1].set_visible(False)
-        axs[1, 2].set_visible(False)
+        for i in range(ncols):
+            axs[0, i].set_visible(False)
+            axs[1, i].set_visible(False)
+            
                         
         # create place for the map
         gs = axs[0, 0].get_gridspec()
@@ -516,7 +849,7 @@ class PlotRaster():
             world_cover_selection=None,
             time_selection=time_selection,
             fig=fig,
-            ax=(3, 3, (1, 6)),
+            ax=(3, ncols, (1, ncols*2)),
             title=title,
             dpi=dpi,
             cmap=cmap,
@@ -587,7 +920,8 @@ class PlotRaster():
         # get the data on the requested time
         data = data.sel(time=time_selection)
         if data['time'].size > 1:
-            data = data.isel(time=0)
+            print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
+        data = data.isel(time=0)
         
         #create mask were data and data_mean are not nan
         mask = ~np.isnan(data.values) & ~np.isnan(data_mean.values)
@@ -737,14 +1071,22 @@ class PlotRaster():
         data_type:str="swot",
         time_selection:str=None,
         thresholds:float|dict=0.8,
+        urban_diff=False,
+        forest_diff=False,
+        open_diff=False,
         add_uncertainty:bool=False,
         threshold_SNR:float=0.5,
+        threshold_gamma:float=0.5,
         comparing_raster_Path:Path=None,
         add_classif_score:bool=True,
         title:str=None,
         dpi:int=300,
         add_bkg:bool=False,
         add_legend:bool=True,
+        disk_size:int=2,
+        extents:List[float]=None,
+        fig:plt.Figure=None,
+        ax:plt.Axes=None,
         **kwargs
     ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the map of the variable with the mask of the thresholds
@@ -755,6 +1097,9 @@ class PlotRaster():
             data_type (str): the type of data to plot ('swot', 'mean', 'diff')
             time_selection (str): the time selection to plot. Default is None.
             thresholds (float|dict|List[float]): the threshold to mask the data. Can be a float for a global threshold or a dictionary containing values for each pixel class. Default is 0.8.
+            urban_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
+            forest_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
+            open_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
             add_uncertainty (bool): Add the classification for SNR/dark water. Default is False.
             threshold_SNR (float): The threshold to mask the SNR data. Default is 0.5.
             comparing_raster_Path (Path): the path to the raster to compare with. Default is None.
@@ -763,6 +1108,8 @@ class PlotRaster():
             dpi (int): The dpi of the plot to save. Default is 300.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
             add_legend (bool): Add a legend to the plot. Default is True.
+            disk_size (int): The size of the disk to use for cleaning the mask. Default is 2.
+            extents (List[float]): The extents of the map. Default is None.
             **kwargs: Additional arguments to pass to the plotting function
         Returns:
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
@@ -798,41 +1145,56 @@ class PlotRaster():
                 thresholds["urban"] = 0.8
         else:
             raise ValueError("The thresholds must be a float or a dictionary")
-
-        data_urban = self.swot_collection.get_variable(variable, data_area, data_type, 'urban')
-        data_forest = self.swot_collection.get_variable(variable, data_area, data_type, 'forest')
-        data_open = self.swot_collection.get_variable(variable, data_area, data_type, 'open')
+        
+        if urban_diff:
+            data_urban = self.swot_collection.get_variable(variable, data_area, "diff", 'urban')
+        else:
+            data_urban = self.swot_collection.get_variable(variable, data_area, data_type, 'urban')
+            
+        if forest_diff:
+            data_forest = self.swot_collection.get_variable(variable, data_area, "diff", 'forest')
+        else:
+            data_forest = self.swot_collection.get_variable(variable, data_area, data_type, 'forest')
+        if open_diff:
+            data_open = self.swot_collection.get_variable(variable, data_area, "diff", 'open')
+        else:
+            data_open = self.swot_collection.get_variable(variable, data_area, data_type, 'open')
         data_glob = self.swot_collection.get_variable(variable, data_area, data_type, None)
 
         label_data = self.get_label(variable)
 
         if add_uncertainty:
-            data_SNR_urban =  self.swot_collection.get_variable("gamma_SNR", data_area, data_type, 'urban')
-            data_SNR_forest = self.swot_collection.get_variable("gamma_SNR", data_area, data_type, 'forest')
-            data_SNR_open =   self.swot_collection.get_variable("gamma_SNR", data_area, data_type, 'open')
+            data_SNR_urban =  self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'urban')
+            data_SNR_forest = self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'forest')
+            data_SNR_open =   self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'open')
             
+            data_urban_gamma_tot =  self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'urban')
+            data_forest_gamma_tot = self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'forest')
+            data_open_gamma_tot =   self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'open')
+            
+            self.swot_collection.floodmask = self.swot_collection.floodmask.to_crs(self.CRS)
             data_SNR_urban =  data_SNR_urban.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
             data_SNR_forest = data_SNR_forest.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
             data_SNR_open =   data_SNR_open.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
             
-            data_flood_urban = data_urban.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_flood_forest = data_forest.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_flood_open = data_open.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
+            data_flood_urban = data_urban_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
+            data_flood_forest = data_forest_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
+            data_flood_open = data_open_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
 
         # Get the data on the requested time
-        if time_selection is not None:
-            data_urban = data_urban.sel(time=time_selection)
-            data_forest = data_forest.sel(time=time_selection)
-            data_open = data_open.sel(time=time_selection)
-            data_glob = data_glob.sel(time=time_selection)
-            if add_uncertainty:
-                data_SNR_urban = data_SNR_urban.sel(time=time_selection)
-                data_SNR_forest = data_SNR_forest.sel(time=time_selection)
-                data_SNR_open = data_SNR_open.sel(time=time_selection)
-                data_flood_urban = data_flood_urban.sel(time=time_selection)
-                data_flood_forest = data_flood_forest.sel(time=time_selection)
-                data_flood_open = data_flood_open.sel(time=time_selection)
-        else:
+        if "time" in data_glob.dims:
+            if time_selection is not None:
+                data_urban = data_urban.sel(time=time_selection)
+                data_forest = data_forest.sel(time=time_selection)
+                data_open = data_open.sel(time=time_selection)
+                data_glob = data_glob.sel(time=time_selection)
+                if add_uncertainty:
+                    data_SNR_urban = data_SNR_urban.sel(time=time_selection)
+                    data_SNR_forest = data_SNR_forest.sel(time=time_selection)
+                    data_SNR_open = data_SNR_open.sel(time=time_selection)
+                    data_flood_urban = data_flood_urban.sel(time=time_selection)
+                    data_flood_forest = data_flood_forest.sel(time=time_selection)
+                    data_flood_open = data_flood_open.sel(time=time_selection)
             data_urban = data_urban.isel(time=0)
             data_forest = data_forest.isel(time=0)
             data_open = data_open.isel(time=0)
@@ -846,48 +1208,75 @@ class PlotRaster():
                 data_flood_open = data_flood_open.isel(time=0)
         holes_mask = np.isnan(data_glob.values) * 1
 
+        if data_type == "diff":
+            from skimage.filters import gaussian
+            # smooth data with gaussian filter
+            gaussian_urban = gaussian(data_urban.values, sigma=1)
+            gaussian_forest = gaussian(data_forest.values, sigma=1)
+            gaussian_open = gaussian(data_open.values, sigma=1)
+            
+            data_urban.values = gaussian_urban
+            data_forest.values = gaussian_forest
+            data_open.values = gaussian_open
+            
+        if data_type == "swot" and not urban_diff:
+            thresholds_apply = abs(thresholds['urban'])
+        else:
+            thresholds_apply = thresholds['urban']
         if thresholds['urban'] > 0:
-            mask_urban = np.where(data_urban.values > thresholds['urban'], 1, 0)
+            mask_urban = np.where(data_urban.values > thresholds_apply, 1, 0)
         else:
-            mask_urban = np.where(data_urban.values < thresholds['urban'], 1, 0)
+            mask_urban = np.where(data_urban.values < thresholds_apply, 1, 0)
+        if data_type == "swot" and not forest_diff:
+            thresholds_apply = abs(thresholds['forest'])
+        else:
+            thresholds_apply = thresholds['forest']
         if thresholds['forest'] > 0:
-            mask_forest = np.where(data_forest.values > thresholds['forest'], 2, 0)
+            mask_forest = np.where(data_forest.values > thresholds_apply, 2, 0)
         else:
-            mask_forest = np.where(data_forest.values < thresholds['forest'], 2, 0)
+            mask_forest = np.where(data_forest.values < thresholds_apply, 2, 0)
+        if data_type == "swot" and not open_diff:
+            thresholds_apply = abs(thresholds['open'])
+        else:
+            thresholds_apply = thresholds['open']
         if thresholds['open'] > 0:
-            mask_open = np.where(data_open.values > thresholds['open'], 3, 0)
+            mask_open = np.where(data_open.values > thresholds_apply, 3, 0)
         else:
-            mask_open = np.where(data_open.values < thresholds['open'], 3, 0)
+            mask_open = np.where(data_open.values < thresholds_apply, 3, 0)
         mask = mask_urban + mask_forest + mask_open
 
         if add_uncertainty:
-            mask_SNR_urban = np.where(data_SNR_urban.values < threshold_SNR, 11, 0)
             if variable == "gamma_tot":
-                mask_darkwater_urban = np.where(data_flood_urban.values < 0.2, 21, 0)
-            mask_SNR_forest = np.where(data_SNR_forest.values < threshold_SNR, 12, 0)
-            if variable == "gamma_tot":
-                mask_darkwater_forest = np.where(data_flood_forest.values < 0.2, 22, 0)
-            mask_SNR_open = np.where(data_SNR_open.values < threshold_SNR, 13, 0)
-            if variable == "gamma_tot":
-                mask_darkwater_open = np.where(data_flood_open.values < 0.2, 23, 0)
-            mask_SNR = mask_SNR_urban + mask_SNR_forest + mask_SNR_open
-            if variable == "gamma_tot":
+                mask_darkwater_urban = np.where(data_flood_urban.values < threshold_gamma, 11, 0)
+                mask_darkwater_forest = np.where(data_flood_forest.values < threshold_gamma, 12, 0)
+                mask_darkwater_open = np.where(data_flood_open.values < threshold_gamma, 13, 0)
                 mask_darkwater = mask_darkwater_urban + mask_darkwater_forest + mask_darkwater_open
+                
+            mask_SNR_urban = np.where(data_SNR_urban.values < threshold_SNR, 21, 0)
+            mask_SNR_forest = np.where(data_SNR_forest.values < threshold_SNR, 22, 0)
+            mask_SNR_open = np.where(data_SNR_open.values < threshold_SNR, 23, 0)
+            mask_SNR = mask_SNR_urban + mask_SNR_forest + mask_SNR_open
             
         global_mask = mask
         if add_uncertainty:
             global_mask[mask_SNR != 0] = mask_SNR[mask_SNR != 0]
             if variable == "gamma_tot":
-                global_mask[mask_darkwater != 0] = mask_darkwater[mask_darkwater != 0]
+                condition = np.logical_and(mask_SNR == 0, mask_darkwater != 0)
+                global_mask[condition] = mask_darkwater[condition]
+        
+        # majority filter
+        footprint = morphology.disk(disk_size)
+        global_mask = majority(global_mask.astype(np.uint8), footprint=footprint)
+        global_mask = global_mask.astype(float)
+        print(np.unique(global_mask))
 
         clean_mask = (global_mask != 0) * 1
         
         # cleaning mask
-        footprint = morphology.disk(2)
         res = morphology.white_tophat(clean_mask, footprint)
         clean_mask = np.where(res == 1, 0, clean_mask)
-        clean_mask = binary_erosion(clean_mask, structure=morphology.disk(2)).astype(float)
-        clean_mask = binary_dilation(clean_mask,structure=morphology.disk(2)).astype(float)
+        clean_mask = binary_erosion(clean_mask, structure=footprint).astype(float)
+        clean_mask = binary_dilation(clean_mask,structure=footprint).astype(float)
         
         global_mask = np.where(clean_mask == 1, global_mask, 0)
         
@@ -945,17 +1334,22 @@ class PlotRaster():
         data.values[holes_mask] = np.nan
         data.values[data.values==0] = np.nan
 
-        map_obj = Maps(crs=self.CRS, ax=(3,3,(1,6)), figsize=(10, 10))
+        if fig is None:
+            map_obj = Maps(crs=self.CRS, ax=(3,3,(1,6)), figsize=(10, 10))
+        else:
+            map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
         
         # Get extent of the data
         match data_area:
             case "global":
                 poly = self.BBOX
+                extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
             case "control":
                 poly = self.swot_collection.controlmask
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
             case "flood":
                 poly = self.swot_collection.floodmask
-        extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
         map_obj.set_extent(extents=extents, crs=self.CRS)
 
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
@@ -982,11 +1376,11 @@ class PlotRaster():
         m_data.plot_map(cmap=cmap.to_matplotlib(), norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)
 
         if add_classif_score:
-            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes)
+            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
         if comparing_raster_Path is not None:
-            m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes)
+            m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
             if add_classif_score:
-                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes)
+                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
 
         # add legend for the flood mask
         if add_legend:
@@ -1017,5 +1411,4 @@ class PlotRaster():
             m_data.show()
 
         return map_obj.f, map_obj.f.axes
-        
-        
+       

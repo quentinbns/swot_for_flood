@@ -10,6 +10,7 @@
 #SBATCH -e pretreat_pixc.err
 #SBATCH -J pretreat_pixc
 #SBATCH --ntasks-per-node=12
+#SBATCH  --dependency=48158
 
 
 # >>> conda initialize >>>

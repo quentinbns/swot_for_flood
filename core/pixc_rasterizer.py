@@ -310,7 +310,7 @@ class Rasterizer():
         for var in self.variables:
             os.rmdir(self.TIFF_PATH.joinpath(var))
         
-    def gdalwarp_raster_to_swot_bbox_and_size(self, raster:Path, raster_crs:int, interp:str=None) -> None:
+    def gdalwarp_raster_to_swot_bbox_and_size(self, raster:Path, raster_crs:int, interp:str=None, ncol=None, nrow=None) -> None:
         """Convert the auxiliary raster to tiff with the same resolution  and bounding box as the SWOT tiff
         
         Args:
@@ -318,15 +318,19 @@ class Rasterizer():
             raster_crs (int): EPSG code of the raster
             interp (str, optional): interpolation method for gdalwarp. Defaults to None.
         """
+        if ncol is None:
+            ncol = self.ncol
+        if nrow is None:
+            nrow = self.nrow
         print(">>> Converting the AUXILARY rasters to tiff")
-        output = self.AUX_PATH.joinpath(raster.name.split('.')[0] + f"_nrow{int(self.nrow)}_ncol{int(self.ncol)}.tif")
+        output = self.AUX_PATH.joinpath(raster.name.split('.')[0] + f"_nrow{int(nrow)}_ncol{int(ncol)}.tif")
         
         if interp is None:
             interp = "bilinear"
             if "wc" in raster.name.lower() or "worldcover" in raster.name.lower():
                 interp = "near"
         
-        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -te {self.ulx} {self.uly} {self.lrx} {self.lry} -ts {self.ncol} {self.nrow} -r {interp} -of GTiff {raster} {output}"
+        cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -te {self.ulx} {self.uly} {self.lrx} {self.lry} -ts {ncol} {nrow} -r {interp} -of GTiff {raster} {output}"
         
         print(cmd)
         os.system(cmd)

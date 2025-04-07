@@ -98,8 +98,10 @@ class SwotRaster():
         self.SWOT_CONTROL_MASK = None
         self.SWOT_FLOOD_MASK = None
         if self.controlmask is not None:
+            self.controlmask = self.controlmask.to_crs(self.raster_crs)
             self.SWOT_CONTROL_MASK = self.SWOT_RASTER.rio.clip(self.controlmask.geometry)
         if self.floodmask is not None:
+            self.floodmask = self.floodmask.to_crs(self.raster_crs)
             self.SWOT_FLOOD_MASK = self.SWOT_RASTER.rio.clip(self.floodmask.geometry)
     
     def clip_worldcover(self):
@@ -107,8 +109,10 @@ class SwotRaster():
         self.ESA_WC_CONTROL = None
         self.ESA_WC_FLOOD = None
         if self.controlmask is not None:
+            self.controlmask = self.controlmask.to_crs(self.raster_crs)
             self.ESA_WC_CONTROL = self.ESA_WC.rio.clip(self.controlmask.geometry)
         if self.floodmask is not None:
+            self.floodmask = self.floodmask.to_crs(self.raster_crs)
             self.ESA_WC_FLOOD = self.ESA_WC.rio.clip(self.floodmask.geometry)
     
     def get_swot_variable(self, variable:str):
@@ -157,10 +161,10 @@ class SwotRaster():
         condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
         condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
         condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
-        condition_open = np.logical_and(
-            ~ condition_forest,
-            ~ condition_urban,
-            ~ condition_permament_water
+        condition_open = np.logical_and(~ condition_forest,
+            np.logical_and(
+                ~ condition_urban,
+                ~ condition_permament_water)
             )
         SWOT_urban = xr.apply_ufunc(ufunc_where, SWOT_array, condition_urban, dask='parallelized')
         SWOT_forest = xr.apply_ufunc(ufunc_where, SWOT_array, condition_forest, dask='parallelized')
@@ -269,6 +273,9 @@ class SwotMean():
         """ Create a mean of the SWOT Rasters data """
         self.swot_mean = self.swot_rasters.mean(dim='time')
         
+        self.controlmask = self.controlmask.to_crs(self.raster_crs)
+        self.floodmask = self.floodmask.to_crs(self.raster_crs)
+        
         self.swot_mean_control = self.swot_mean.rio.clip(self.controlmask.geometry)
         self.swot_mean_flood = self.swot_mean.rio.clip(self.floodmask.geometry)
         self.make_mask_worldcover()
@@ -372,9 +379,9 @@ class SwotCollection():
         
     def make_mask_worldcover(self):
         """ mask the world cover data """
-        self.mask_urban_diff_global, self.mask_forest_diff_global, self.mask_open_diff_global = SwotRaster.mask_worldcover(self.ESA_WC, self.swot_mean.swot_mean)
-        self.mask_urban_diff_control, self.mask_forest_diff_control, self.mask_open_diff_control = SwotRaster.mask_worldcover(self.ESA_WC_CONTROL, self.swot_mean.swot_mean_control)
-        self.mask_urban_diff_flood, self.mask_forest_diff_flood, self.mask_open_diff_flood = SwotRaster.mask_worldcover(self.ESA_WC_FLOOD, self.swot_mean.swot_mean_flood)
+        self.mask_urban_diff_global, self.mask_forest_diff_global, self.mask_open_diff_global = SwotRaster.mask_worldcover(self.ESA_WC, self.swot_diff)
+        self.mask_urban_diff_control, self.mask_forest_diff_control, self.mask_open_diff_control = SwotRaster.mask_worldcover(self.ESA_WC_CONTROL, self.swot_diff_control)
+        self.mask_urban_diff_flood, self.mask_forest_diff_flood, self.mask_open_diff_flood = SwotRaster.mask_worldcover(self.ESA_WC_FLOOD, self.swot_diff_flood)
     
     def compute_difference(self):
         """ Compute the difference between the flood and dry mean SWOT raster data and make the ESA world cover mask"""

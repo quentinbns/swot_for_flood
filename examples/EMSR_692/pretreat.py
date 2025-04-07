@@ -3,7 +3,7 @@ os.sys.path.append('/data/scratch/globc/bonassies/workspace/swot_for_flood')
 
 import configparser
 from pathlib import Path
-from core.swot_project import SWOT_PROJECT
+from core.swot_project import SwotProject
 
 main_path = "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/EMSR_692"
 
@@ -13,11 +13,11 @@ config.read(main_path + '/config.cfg')
 print(type(config),dict(config['CONFIG']))
 
 #create the SWOT_PROJECT object
-swot_project = SWOT_PROJECT(config)
-print(swot_project)
+swot_project = SwotProject(config)
+print(swot_project, flush=True)
 
 # # Search and download the data
-swot_project.Downloader.search_PIXC()
+# swot_project.Downloader.search_PIXC()
 # swot_project.Downloader.download_pool()
 
 # Find and pre-process the data
