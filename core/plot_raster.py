@@ -26,6 +26,7 @@ from core.swot_project import SwotProject
 from auxiliary.cbar_ESA_WC import *
 from auxiliary.cbar_SWOT import *
 from auxiliary.plot_variables import *
+from auxiliary.tools import power_to_db
 
 class PlotRaster():
     """ Uses the SWOT_RASTER, SWOT_COLLECTION or SWOT_MEAN classes as input data to plot the raster data """
@@ -363,7 +364,7 @@ class PlotRaster():
                 for value, label in zip(values_ESAWC, tick_labels_ESAWC):
                     ll.append(mpatches.Patch(color=cmap_ESAWC(value), label=label))
                 
-                aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
+                aaxx.legend(handles=ll, fontsize=10, loc="upper left", handlelength=1, handleheight=1)
                 
         if self.save_fig:
             name_stripped = '_'.join(path_to_raster.stem.split(" "))
@@ -551,6 +552,9 @@ class PlotRaster():
                     print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
                 data = data.isel(time=0)
         
+        if variable == "sig0" or variable == "coherent_power":
+            data.values = power_to_db(data.values)
+        
         # Get extent of the data
         match data_area:
             case "global":
@@ -562,7 +566,6 @@ class PlotRaster():
             case "flood":
                 poly = self.swot_collection.floodmask.to_crs(self.CRS)
                 extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
-                
         
         map_obj = Maps(crs=self.CRS, f=fig, ax=ax)
         map_obj.set_extent(extents=extents, crs=self.CRS)
@@ -571,14 +574,14 @@ class PlotRaster():
         c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         if title is not None:
-            map_obj.add_title(title, y=1)
+            map_obj.add_title(title, y=1, fontsize=14)
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
             if world_cover_selection is not None:
                 label_data += f" - {world_cover_selection} areas"
-            map_obj.add_title(f"{label_data} - {time_str}", y=1)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=14)
         
         if add_bkg:
             m_bkg = map_obj.new_layer()
@@ -623,6 +626,7 @@ class PlotRaster():
         set_title:bool=True,
         dpi:int=300,
         bins:int=100,
+        range_hist:List[float]=None,
         color:str='blue',
         use_seaborn:bool=True,
         save_fig:bool=None,
@@ -683,6 +687,9 @@ class PlotRaster():
                     print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
             data = data.isel(time=0)
         
+        if variable == "sig0" or variable == "coherent_power":
+            data.values = power_to_db(data.values)
+            
         # Set specific color if world_cover_selection is given
         color = self.select_color_world_cover(color, world_cover_selection)
             
@@ -690,20 +697,34 @@ class PlotRaster():
         if fig is None:
             fig, ax = plt.subplots()
         if use_seaborn:
-            sns.histplot(data.values.flatten(), element='step', bins=bins, color=color, ax=ax, alpha=0.7, **kwargs)
+            if range_hist is not None:
+                sns.histplot(data.values.flatten(), element='step',binrange=range_hist, bins=bins, color=color, ax=ax, alpha=0.7, **kwargs)
+            else:
+                sns.histplot(data.values.flatten(), element='step', bins=bins, color=color, ax=ax, alpha=0.7, **kwargs)
         else:
-            ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, **kwargs)
-        median_data = np.nanmean(data.values.flatten())
+            if range_hist is not None:
+                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, range=range_hist, **kwargs)
+            else:
+                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, **kwargs)
+            median_data = np.nanmean(data.values.flatten())
         ax.axvline(median_data, color=color, linestyle='dashed', linewidth=1)
         ax.text(median_data, y_text, f"Median: {median_data:.2f}", color=color, rotation=90, ha=ha, va=va, transform=ax.get_xaxis_transform(),
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_mean:
             mean_data = self.swot_collection.get_variable(variable, data_area, "mean", world_cover_selection)
+            if variable == "sig0" or variable == "coherent_power":
+                mean_data.values = power_to_db(mean_data.values)
             if use_seaborn:
-                sns.histplot(mean_data.values.flatten(), element='step', bins=bins, color='grey', alpha=0.5, ax=ax, **kwargs)
+                if range_hist is not None:
+                    sns.histplot(mean_data.values.flatten(), element='step', binrange=range_hist, bins=bins, color='grey', alpha=0.5, ax=ax, **kwargs)
+                else:
+                    sns.histplot(mean_data.values.flatten(), element='step', bins=bins, color='grey', alpha=0.5, ax=ax, **kwargs)
             else:
-                ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, **kwargs)
+                if range_hist is not None:
+                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, range=range_hist, **kwargs)
+                else:
+                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, **kwargs)
             median_mean = np.nanmean(mean_data.values.flatten())
             ax.axvline(median_mean, color='grey', linestyle='dashed', linewidth=1)
             ax.text(median_mean, y_text_mean, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha=ha_mean, transform=ax.get_xaxis_transform(),
@@ -717,14 +738,14 @@ class PlotRaster():
         
         if set_title:
             if title is not None:
-                ax.set_title(title)
+                ax.set_title(title, fontsize=14)
             else:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
                 if data['time'].size > 1:
                     time_str = time_str[0]
                 if world_cover_selection is not None:
                     label_data += f" - {world_cover_selection} areas"
-                ax.set_title(f"{label_data} - {time_str}")
+                ax.set_title(f"{label_data} - {time_str}", fontsize=14)
         
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -928,6 +949,10 @@ class PlotRaster():
         data = data.where(mask)
         data_mean = data_mean.where(mask)
         
+        if variable == "sig0" or variable == "coherent_power":
+            data.values = power_to_db(data.values)
+            data_mean.values = power_to_db(data_mean.values)
+            
         im = data_mean.plot.imshow(ax=axs[0], cmap=cmap, vmin=vmin, vmax=vmax, add_colorbar=False, add_labels=False)
         axs[0].set_title(f"{label_data} - Mean data")
         
@@ -949,10 +974,14 @@ class PlotRaster():
         cbar = fig.colorbar(im, cax=cax)
         cbar.set_label(label_data)
         
-        str_time = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
-        if data['time'].size > 1:
-            str_time = str_time[0]
-        axs[1].set_title(f"{label_data} - {str_time}")
+        if 'time' in data.dims:
+            str_time = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
+            if data['time'].size > 1:
+                str_time = str_time[0]
+        
+            axs[1].set_title(f"{label_data} - {str_time}", fontsize=14)
+        else:
+            axs[1].set_title(f"{label_data}", fontsize=14)
         
         self.plot_histogram(
             variable=variable,
@@ -1024,6 +1053,11 @@ class PlotRaster():
         data_mean = mean_obj.swot_mean[variable]
         data_dates = mean_obj.swot_rasters[variable]
         
+        
+        if variable == "sig0" or variable == "coherent_power":
+            data_mean.values = power_to_db(data_mean.values)
+            data_dates.values = power_to_db(data_dates.values)
+        
         no_range = False
         if range is None:
             no_range = True
@@ -1049,7 +1083,7 @@ class PlotRaster():
             ax.legend(fontsize=11)
         
         if title is not None:
-            ax.set_title(title)
+            ax.set_title(title, fontsize=14)
         
         if self.save_fig:
             time_str = data_dates['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -1268,7 +1302,6 @@ class PlotRaster():
         footprint = morphology.disk(disk_size)
         global_mask = majority(global_mask.astype(np.uint8), footprint=footprint)
         global_mask = global_mask.astype(float)
-        print(np.unique(global_mask))
 
         clean_mask = (global_mask != 0) * 1
         
@@ -1340,29 +1373,33 @@ class PlotRaster():
             map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
         
         # Get extent of the data
-        match data_area:
-            case "global":
-                poly = self.BBOX
-                extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
-            case "control":
-                poly = self.swot_collection.controlmask
-                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
-            case "flood":
-                poly = self.swot_collection.floodmask
-                extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
-        map_obj.set_extent(extents=extents, crs=self.CRS)
+        if extents is None:
+            match data_area:
+                case "global":
+                    poly = self.BBOX
+                    extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+                case "control":
+                    poly = self.swot_collection.controlmask
+                    extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+                case "flood":
+                    poly = self.swot_collection.floodmask
+                    extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+            crs_extents = self.CRS
+        else:
+            crs_extents = 4326
+        map_obj.set_extent(extents=extents, crs=crs_extents)
 
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
         c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         if title is not None:
-            map_obj.add_title(title, y=1)
+            map_obj.add_title(title, y=1, fontsize=14)
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
-            map_obj.add_title(f"{label_data} - {time_str}", y=1)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=14)
 
         if add_bkg:
             m_bkg = map_obj.new_layer()

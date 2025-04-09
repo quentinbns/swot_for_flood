@@ -179,6 +179,7 @@ class SwotProject():
             TIFF_PATH=self.TIFF_PATH,
             first_time=self.first_time,
             last_time=self.last_time,
+            studied_time=self.list_dry_dates +  self.list_flood_dates,
             AOI=self.AOI,
             CRS=self.CRS,
             variables=self.variables,

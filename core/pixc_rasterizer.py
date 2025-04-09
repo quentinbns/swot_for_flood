@@ -23,6 +23,7 @@ class Rasterizer():
         AOI: gpd.GeoDataFrame,
         CRS:str,
         variables:List[str],
+        studied_time:List[str]=list(),
         tile_names_selection:List[str]=list(),
         pixel_resolution:float=10,
         gdal_grid_options:dict=dict(),
@@ -31,7 +32,8 @@ class Rasterizer():
         GDAL_CACHEMAX:int=1024,
         do_make_gpkg:bool=False,
         do_make_tiff:bool=False,
-        make_space:bool=False
+        make_space:bool=False,
+        add_darkwater_filter:bool=False
     )-> None:
         """Initialize the Rasterizer class
         
@@ -54,6 +56,7 @@ class Rasterizer():
             do_make_gpkg (bool, optional): flag to make the geopackage. Defaults to False.
             do_make_tiff (bool, optional): flag to make the tiff files. Defaults
             make_space (bool, optional): flag to remove the geopackage and tiff files. Defaults to False.
+            add_darkwater_filter (bool, optional): flag to add the dark water into discarding pixel filter. Defaults to False.
         """
         self.SWOT_PATH : Path = SWOT_PATH
         self.AUX_PATH : Path = AUX_PATH
@@ -61,6 +64,7 @@ class Rasterizer():
         self.TIFF_PATH : Path = TIFF_PATH
         self.first_time : datetime = datetime.strptime(first_time, '%Y-%m-%d')
         self.last_time : datetime = datetime.strptime(last_time, '%Y-%m-%d')
+        self.studied_time : List[datetime] = [datetime.strptime(time, '%Y-%m-%d') for time in studied_time]
         self.AOI : gpd.GeoDataFrame = AOI
         self.CRS : str = CRS
         self.variables : List[str] = variables
@@ -71,6 +75,7 @@ class Rasterizer():
         self.GDAL_NUM_THREADS : int = GDAL_NUM_THREADS
         self.GDAL_CACHEMAX : int = GDAL_CACHEMAX
         self.make_space : bool = make_space
+        self.add_darkwater_filter : bool = add_darkwater_filter
         
         # create the list of tile names if not provided
         if self.tile_names_selection is None:
@@ -107,7 +112,7 @@ class Rasterizer():
                 text += f"\n\t{key}: {item}"
         return text
 
-    def find_pixc(self) -> None:
+    def find_pixc(self, studied=False) -> None:
         """Find the pixc files for the given pass
         """
         list_time = [name.name.split('_')[7] for name in self.SWOT_PATH.glob(f'*PIXC*.nc')]
@@ -115,14 +120,21 @@ class Rasterizer():
             print(ValueError("No pixc files found, please check the SWOT_PATH of download the data"))
             return
         
-        self.list_time_select = sorted(list(set(
-            [
-                time.split('T')[0] for time in list_time \
-                    if datetime.strptime(time, '%Y%m%dT%H%M%S') > self.first_time 
-                    and datetime.strptime(time, '%Y%m%dT%H%M%S') < self.last_time
-                ]
-            )))
-        
+        if not studied:
+            self.list_time_select = sorted(list(set(
+                [
+                    time.split('T')[0] for time in list_time \
+                        if datetime.strptime(time, '%Y%m%dT%H%M%S') > self.first_time 
+                        and datetime.strptime(time, '%Y%m%dT%H%M%S') < self.last_time
+                    ]
+                )))
+        else:
+            self.list_time_select = sorted(list(set(
+                [
+                    time.split('T')[0] for time in list_time \
+                        if datetime.strptime(time.split('T')[0], '%Y%m%d') in self.studied_time
+                    ]
+                )))
         self.list_pixc = [list(self.SWOT_PATH.glob(f'*PIXC*{time}*.nc')) for time in self.list_time_select]
         
         self.meta_swot = xr.open_dataset(self.list_pixc[0][0])
@@ -173,8 +185,10 @@ class Rasterizer():
                 SWOT_noise_im = xr.open_dataset(tile, group='noise', engine='netcdf4')
                 meta_im = xr.open_dataset(tile)
                 
-                classif_im = SWOT_im.classification.values
-                darkwater_filter = (classif_im != 5)
+                quality_flag = (SWOT_im.interferogram_qual.values != 524288) # Bit value 19 (2^19) => Specular ringing quality flag
+                darkwater_filter = (SWOT_im.classification.values != 5) # Dark water classification value
+                if self.add_darkwater_filter:
+                    quality_flag = np.logical_and(quality_flag, darkwater_filter)
                 
                 interf = SWOT_im.interferogram.values[:,0] + 1j * SWOT_im.interferogram.values[:,1]
                 gamma_tot = interf_coh(interf, SWOT_im.power_plus_y.values, SWOT_im.power_minus_y.values)
@@ -198,23 +212,23 @@ class Rasterizer():
                 data = {}
                 for var in self.variables:
                     if var == 'gamma_tot':
-                        data[var] = gamma_tot[darkwater_filter]
+                        data[var] = gamma_tot[quality_flag]
                     elif var == 'gamma_SNR':
-                        data[var] = gamma_SNR[darkwater_filter]
+                        data[var] = gamma_SNR[quality_flag]
                     elif var == 'gamma_est':
-                        data[var] = gamma_est[darkwater_filter]
+                        data[var] = gamma_est[quality_flag]
                     elif var == 'interf_real':
-                        data[var] =SWOT_im.interferogram.values[:,0][darkwater_filter]
+                        data[var] =SWOT_im.interferogram.values[:,0][quality_flag]
                     elif var == 'interf_imag':
-                        data[var] = SWOT_im.interferogram.values[:,1][darkwater_filter]
+                        data[var] = SWOT_im.interferogram.values[:,1][quality_flag]
                     elif var == 'incidence':
-                        data[var] = SWOT_im.inc.values.astype('float32')[darkwater_filter]
+                        data[var] = SWOT_im.inc.values.astype('float32')[quality_flag]
                     elif var in ['classification', 'bright_land_flag']:
-                        data[var] = SWOT_im[var].values.astype('int32')[darkwater_filter]
+                        data[var] = SWOT_im[var].values.astype('int32')[quality_flag]
                     else:
-                        data[var] = SWOT_im[var].values.astype('float32')[darkwater_filter]
-                data['latitude'] = SWOT_im.latitude.values.astype('float32')[darkwater_filter]
-                data['longitude'] = SWOT_im.longitude.values.astype('float32')[darkwater_filter]
+                        data[var] = SWOT_im[var].values.astype('float32')[quality_flag]
+                data['latitude'] = SWOT_im.latitude.values.astype('float32')[quality_flag]
+                data['longitude'] = SWOT_im.longitude.values.astype('float32')[quality_flag]
                 data['polarization'] = meta_im.polarization
                 data['tile_name'] = meta_im.tile_name
                 data['time_coverage_start'] = meta_im.time_coverage_start
@@ -222,8 +236,8 @@ class Rasterizer():
                 SWOT_im = gpd.GeoDataFrame(
                     data = data,
                     geometry=gpd.points_from_xy(
-                        SWOT_im.longitude.values[darkwater_filter],
-                        SWOT_im.latitude.values[darkwater_filter]
+                        SWOT_im.longitude.values[quality_flag],
+                        SWOT_im.latitude.values[quality_flag]
                         ),
                     crs='EPSG:4326'
                     )
@@ -261,6 +275,9 @@ class Rasterizer():
             for var in self.variables:
                 print(">>> Generate tiff for ", var)
                 tif_output = str(self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif"))
+                if os.path.exists(tif_output):
+                    print(f"\t>>> File {tif_output} already exists, deleting file")
+                    os.remove(tif_output)
                 tiff_gpkg.append(tif_output)
                 # GDAL Grid algorithm that perform IDW interpolation
                 # clip the output to the polygon of poly_cut.gpkg, fid = 1 using -clipsrcwhere -clipsrc and -clipsrclayer option
