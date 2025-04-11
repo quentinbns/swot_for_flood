@@ -103,12 +103,12 @@ class PlotRaster():
         """ 
         
         color_dict = {
-            1: 'red',        # urban
-            2: 'forestgreen',      # forest
-            3: 'cornflowerblue',       # open
-            # 1: 'darkred',   
-            # 2: 'darkgreen', 
-            # 3: 'darkblue',  
+            # 1: 'red',        # urban
+            # 2: 'forestgreen',      # forest
+            # 3: 'cornflowerblue',       # open
+            1: 'darkred',   
+            2: 'darkgreen', 
+            3: 'darkblue',  
             }
         color_labels = {
             1: 'Flooded urban',
@@ -117,12 +117,15 @@ class PlotRaster():
             }
         if add_uncertainty:
             color_dict_uncertainty = { 
-                11: 'darkred',     # urban potential dark water
-                12: 'darkgreen',      # forest potential dark water
-                13: 'darkblue',     # open potential dark water
-                21: 'grey',    # urban low SNR
-                22: 'darkgrey',    # forest low SNR
-                23: 'lightgrey',      # open low SNR
+                11: 'red',        # urban
+                12: 'limegreen',      # forest
+                13: 'cornflowerblue',       # open
+                # 11: 'darkred',     # urban potential dark water
+                # 12: 'darkgreen',      # forest potential dark water
+                # 13: 'darkblue',     # open potential dark water
+                21: 'dimgrey',    # urban low SNR
+                22: 'grey',    # forest low SNR
+                23: 'darkgrey',      # open low SNR
                 # 11: 'rosybrown',     # urban potential dark water
                 # 12: 'yellowgreen',      # forest potential dark water
                 # 13: 'darkcyan',     # open potential dark water
@@ -554,6 +557,7 @@ class PlotRaster():
         add_cbar:bool=True,
         save_fig:bool=None,
         show_fig:bool=None,
+        figsize:Tuple[int, int]=(10, 10),
         **kwargs
         ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the map of the variable 
@@ -612,7 +616,7 @@ class PlotRaster():
                 poly = self.swot_collection.floodmask.to_crs(self.CRS)
                 extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
         
-        map_obj = Maps(crs=self.CRS, f=fig, ax=ax)
+        map_obj = Maps(crs=self.CRS, f=fig, ax=ax, figsize=figsize)
         map_obj.set_extent(extents=extents, crs=self.CRS)
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)

@@ -145,6 +145,10 @@ class SwotProject():
         
         self.swot_collection : SwotCollection = None
 
+        self.do_make_gpkg = do_make_gpkg
+        self.do_make_tiff = do_make_tiff
+        self.do_download = do_download
+        
         # initialize the paths
         self.define_paths()
         self.check_paths()
@@ -160,9 +164,6 @@ class SwotProject():
         if self.controlmask_path is not None:
             self.controlmask = gpd.read_file(self.controlmask_path)
         
-        self.do_make_gpkg = do_make_gpkg
-        self.do_make_tiff = do_make_tiff
-        self.do_download = do_download
         
         # initialize the Downloader and Rasterizer
         self.Downloader = Downloader(
