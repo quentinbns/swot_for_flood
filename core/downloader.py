@@ -1,9 +1,11 @@
 # os.environ['PROJ_LIB'] = '/data/home/globc/bonassies/.conda/envs/conda3.10/share/proj'
 from pathlib import Path
+from typing import List
 import earthaccess
 import geopandas as gpd
 from shapely.geometry import box
 import concurrent.futures
+from datetime import datetime
 
 class Downloader():
     """ Utility class to download data from the Earth Engine API.
@@ -17,7 +19,8 @@ class Downloader():
         do_download: bool = False,
         download_type:str="PIXC",
         passes: list=None, 
-        nodes:int=4
+        nodes:int=4,
+        studied_time:List[str]=list(),
         )-> None:
         """Initialize the Downloader class
 
@@ -25,14 +28,18 @@ class Downloader():
             first_date (str): string with the first date in the format 'YYYY-MM-DD'
             last_date (str): string with the last date in the format 'YYYY-MM-DD'
             AOI (gpd.GeoDataFrame): GeoDataFrame of the Area of interest
+            do_download (bool, optional): if True, download the data automatically. Defaults to False.
+            download_type (str, optional): type of data to download. Defaults to "PIXC".
             passes (list, optional): list of SWOT passes to download. Defaults to None.
             nodes (int, optional): number of nodes to use for parallel download. Defaults to 4.
+            studied_time (List[str], optional): list of dates to download. Defaults to [].
         """
         self.download_path = download_path
         self.download_type = download_type
         self.passes = passes
         self.first_time = first_time
         self.last_time = last_time
+        self.studied_time = studied_time
         AOI = AOI.to_crs(4326)
         self.BBOX = box(
             AOI.bounds['minx'][0],
@@ -90,6 +97,11 @@ class Downloader():
             for res in results:
                 if res['umm']['SpatialExtent']['HorizontalSpatialDomain']['Track']['Passes'][0]['Pass'] not in self.passes:
                     results.remove(res)
+                    if len(self.studied_time) > 0:
+                        time_res = datetime.strptime(results[0]['umm']['TemporalExtent']['RangeDateTime']['BeginningDateTime'].split('T')[0], "%Y-%m-%d").date()
+                        studied_time = [datetime.strptime(date, "%Y-%m-%d").date() for date in self.studied_time]
+                        if time_res not in studied_time:
+                            results.remove(res)
             print(f"Found {len(results)} granules within {self.passes} passes")
         
         self.results = results
