@@ -159,7 +159,11 @@ class SwotProject():
             self.floodmask = gpd.read_file(self.floodmask_path)
         if self.controlmask_path is not None:
             self.controlmask = gpd.read_file(self.controlmask_path)
-            
+        
+        self.do_make_gpkg = do_make_gpkg
+        self.do_make_tiff = do_make_tiff
+        self.do_download = do_download
+        
         # initialize the Downloader and Rasterizer
         self.Downloader = Downloader(
             download_path=self.SWOT_PATH,
@@ -227,26 +231,36 @@ class SwotProject():
     def check_paths(self):
         """check if the paths exist and create them if they don't
         """
-        if self.data_path.joinpath('SWOT').exists() is False:
-            self.data_path.joinpath('SWOT').mkdir()
         if self.workspace.exists() is False:
             self.workspace.mkdir()
-        if self.data_path.exists() is False:
-            self.data_path.mkdir()
         if self.AUX_PATH.exists() is False:
             self.AUX_PATH.mkdir()
-        if self.SWOT_PATH.exists() is False:
-            self.SWOT_PATH.mkdir()
-        if self.PATH_GPKG.exists() is False:
-            self.PATH_GPKG.mkdir()
-        if self.TIFF_PATH.exists() is False:
-            self.TIFF_PATH.mkdir()
-        for variable in self.variables:
-            variable_path = self.TIFF_PATH.joinpath(variable)
-            if variable_path.exists() is False:
-                variable_path.mkdir()
         if self.PLOT_PATH.exists() is False:
             self.PLOT_PATH.mkdir()
+        if self.data_path.exists() is False and self.do_download:
+            self.data_path.mkdir()
+        else:
+            print(f"Data path already exists in {self.data_path} or download is set to False")
+        if self.data_path.joinpath('SWOT').exists() is False and self.do_download:
+            self.data_path.joinpath('SWOT').mkdir()
+        else:
+            print(f"SWOT data already exists in {self.data_path.joinpath('SWOT')} or download is set to False")
+        if self.SWOT_PATH.exists() is False and self.do_download:
+            self.SWOT_PATH.mkdir()
+        else:
+            print(f"SWOT project already exists in {self.SWOT_PATH} or download is set to False")
+        if self.PATH_GPKG.exists() is False and self.do_make_gpkg:
+            self.PATH_GPKG.mkdir()
+        else:
+            print(f"Geopackage already exists in {self.PATH_GPKG} or make_gpkg is set to False")
+        if self.TIFF_PATH.exists() is False and self.do_make_tiff:
+            self.TIFF_PATH.mkdir()
+        else:
+            print(f"TIFF path already exists in {self.TIFF_PATH} or make_tiff is set to False")
+        for variable in self.variables:
+            variable_path = self.TIFF_PATH.joinpath(variable)
+            if variable_path.exists() is False and self.do_make_tiff:
+                variable_path.mkdir()
 
     def define_paths(self):
         """define the paths of the project
@@ -330,3 +344,5 @@ class SwotProject():
         }
         self.swot_collection = SwotCollection(**dict_collection)
         self.swot_collection.open_rasters()
+
+    

@@ -5,7 +5,8 @@
 #SBATCH -e PLOT_SWOT.err
 #SBATCH -J PLOT_SWOT
 #SBATCH --ntasks-per-node=1
-
+#SBATCH --mem=192G
+# #SBATCH --dependency=48426
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!

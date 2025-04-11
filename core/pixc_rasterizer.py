@@ -185,10 +185,19 @@ class Rasterizer():
                 SWOT_noise_im = xr.open_dataset(tile, group='noise', engine='netcdf4')
                 meta_im = xr.open_dataset(tile)
                 
-                quality_flag = (SWOT_im.interferogram_qual.values != 524288) # Bit value 19 (2^19) => Specular ringing quality flag
+                quality_flag = (SWOT_im.interferogram_qual.values == 524288) # Bit value 19 (2^19) => Specular ringing quality flag
+                print("Specular Ringing:", np.unique(quality_flag, return_counts=True))
+                quality_flag_cl = np.logical_or(SWOT_im.classification.values == 6, SWOT_im.classification.values == 7) # Classification of low coherent pixels
+                print("Low Coherent:", np.unique(quality_flag_cl, return_counts=True))
+                
+                # Discard low coherent pixels with Specular ringing
+                quality_flag = np.where(quality_flag_cl, quality_flag, False)
+                print("Pixel discarded:", np.unique(quality_flag, return_counts=True))
+                quality_flag = ~ quality_flag
+                
                 darkwater_filter = (SWOT_im.classification.values != 5) # Dark water classification value
-                if self.add_darkwater_filter:
-                    quality_flag = np.logical_and(quality_flag, darkwater_filter)
+                if self.add_darkwater_filter: # if True, discard dark water pixels
+                    quality_flag = np.logical_or(quality_flag, darkwater_filter)
                 
                 interf = SWOT_im.interferogram.values[:,0] + 1j * SWOT_im.interferogram.values[:,1]
                 gamma_tot = interf_coh(interf, SWOT_im.power_plus_y.values, SWOT_im.power_minus_y.values)
@@ -319,14 +328,20 @@ class Rasterizer():
     def remove_gpkg(self):
         """Remove the geopackage files
         """
+        files = list(self.PATH_GPKG.glob('*.gpkg'))
+        for file in files:
+            os.remove(file)
         os.rmdir(self.PATH_GPKG)
     
     def remove_tiff(self):
         """ Remove the tiff sub-files
         """
         for var in self.variables:
+            files = list(self.TIFF_PATH.joinpath(var).glob('*.tif'))
+            for file in files:
+                os.remove(file)
             os.rmdir(self.TIFF_PATH.joinpath(var))
-        
+
     def gdalwarp_raster_to_swot_bbox_and_size(self, raster:Path, raster_crs:int, interp:str=None, ncol=None, nrow=None) -> None:
         """Convert the auxiliary raster to tiff with the same resolution  and bounding box as the SWOT tiff
         

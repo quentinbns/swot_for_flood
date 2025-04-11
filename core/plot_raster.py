@@ -16,17 +16,17 @@ import seaborn as sns
 from eomaps import Maps
 from cmap import Colormap
 import rioxarray as rxr
-from scipy.ndimage import binary_dilation, binary_erosion
-from skimage import morphology
-from skimage.filters.rank import majority
+from rasterio import features
+from shapely import geometry
+import geopandas as gpd
 
 from time import time
 
 from core.swot_project import SwotProject
+from core.swot_raster import SwotCollection
 from auxiliary.cbar_ESA_WC import *
 from auxiliary.cbar_SWOT import *
 from auxiliary.plot_variables import *
-from auxiliary.tools import power_to_db
 
 class PlotRaster():
     """ Uses the SWOT_RASTER, SWOT_COLLECTION or SWOT_MEAN classes as input data to plot the raster data """
@@ -37,7 +37,7 @@ class PlotRaster():
         # Fast access to the project data
         self.BBOX = project.BBOX
         self.CRS = project.CRS
-        self.swot_collection = project.swot_collection
+        self.swot_collection : SwotCollection = project.swot_collection
         self.PATH_TO_SAVE : Path = project.PLOT_PATH
         
         self.define_plot_directories()
@@ -106,6 +106,9 @@ class PlotRaster():
             1: 'red',        # urban
             2: 'forestgreen',      # forest
             3: 'cornflowerblue',       # open
+            # 1: 'darkred',   
+            # 2: 'darkgreen', 
+            # 3: 'darkblue',  
             }
         color_labels = {
             1: 'Flooded urban',
@@ -114,12 +117,18 @@ class PlotRaster():
             }
         if add_uncertainty:
             color_dict_uncertainty = { 
-                11: 'rosybrown',     # urban potential dark water
-                12: 'yellowgreen',      # forest potential dark water
-                13: 'darkcyan',     # open potential dark water
-                21: 'darkred',    # urban low SNR
-                22: 'darkgreen',    # forest low SNR
-                23: 'darkblue',      # open low SNR
+                11: 'darkred',     # urban potential dark water
+                12: 'darkgreen',      # forest potential dark water
+                13: 'darkblue',     # open potential dark water
+                21: 'grey',    # urban low SNR
+                22: 'darkgrey',    # forest low SNR
+                23: 'lightgrey',      # open low SNR
+                # 11: 'rosybrown',     # urban potential dark water
+                # 12: 'yellowgreen',      # forest potential dark water
+                # 13: 'darkcyan',     # open potential dark water
+                # 21: 'darkred',    # urban low SNR
+                # 22: 'darkgreen',    # forest low SNR
+                # 23: 'darkblue',      # open low SNR
                 }
             color_labels_uncertainty = {
                 11: 'urban potential dark water',
@@ -139,7 +148,7 @@ class PlotRaster():
             range_color[key] = value
         cmap = Colormap(range_color)
         
-        return cmap, color_labels
+        return cmap.to_matplotlib(), color_labels
     
     @staticmethod
     def f1_score(true, pred):
@@ -173,6 +182,46 @@ class PlotRaster():
             f1 = 2 * ((precision * recall) / (precision + recall))
         return f1
     
+    def add_missing_values(self, data_type:str, data_area:str, map_obj:Maps, time_selection:str) -> Maps:
+        """ Add the missing values to the data
+        Args:
+            data_type (str): the type of data to add the missing values
+            data_area (str): the area of the data to add the missing values
+            map_obj (Maps): the map object to add the missing values
+            time_selection (str): the time selection to add the missing values
+        Returns:
+            Maps: the map object with the missing values added
+            handle (mpatches.Patch): the handle of the missing values
+        """
+        mask_holes = self.swot_collection.get_holes_mask(data_area, data_type)
+        try:
+            mask_holes = mask_holes.sel(time=time_selection)
+        except:
+            print("Warning: The mask holes does not have a time dimension or an empty time dimension")
+            pass
+    
+        try:
+            mask_holes = mask_holes.isel(time=0)
+        except:
+            print("Warning: The mask holes does not have a time dimension or an empty time dimension")
+            pass
+        
+        m_mask = map_obj.new_layer()
+        shapes = features.shapes(mask_holes.values.astype(np.uint8), transform=mask_holes.rio.transform())
+        geo_list = []
+        for poly, val in shapes:
+            if val == 0:
+                continue
+            geo_list.append(geometry.shape(poly))
+        gpd_mask = gpd.GeoDataFrame(geometry=geo_list, crs=self.CRS)
+        # gpd_mask.plot(ax=m_mask.ax, color='black', edgecolor='none', linewidth=0.0001, hatch='////', alpha=0.1, zorder=0)  
+        gpd_mask.plot(ax=m_mask.ax, color='black', alpha=1, zorder=0)  
+        
+        # handle = mpatches.Patch(facecolor='none', edgecolor='black', hatch='////', label='No Data or discarded data')
+        handle = mpatches.Patch(facecolor='black', edgecolor='none', label='No Data or discarded data')
+        
+        return m_mask, handle    
+        
     def plot_all_rasters(
         self, 
         variable:str,
@@ -327,7 +376,7 @@ class PlotRaster():
 
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
-        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+        # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         # add title
         if title is not None:
@@ -413,7 +462,7 @@ class PlotRaster():
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
         """
         
-        data = self.swot_collection.get_variable("classification", data_area, "swot", None)
+        data = self.swot_collection.get_variable("classification", data_area, "swot", None).copy()
         label_data = self.get_label("classification")
         if data['time'].size > 1:
             print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
@@ -450,7 +499,7 @@ class PlotRaster():
         map_obj.set_extent(extents=extents, crs=self.CRS)
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
-        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+        # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         if title is not None:
             map_obj.add_title(title, y=1)
@@ -503,7 +552,6 @@ class PlotRaster():
         vmax:float=None,
         add_bkg:bool=True,
         add_cbar:bool=True,
-        set_tight_layout:bool=True,
         save_fig:bool=None,
         show_fig:bool=None,
         **kwargs
@@ -541,19 +589,16 @@ class PlotRaster():
             show_fig = self.show_fig
         
         # Get the data
-        data = self.swot_collection.get_variable(variable, data_area, data_type, world_cover_selection)
+        data = self.swot_collection.get_variable(variable, data_area, data_type, world_cover_selection).copy()
         label_data = self.get_label(variable)
         
         # Get the data on the requested time
         if "time" in data.dims:
             if time_selection is not None:
                 data = data.sel(time=time_selection)
-                if data['time'].size > 1:
-                    print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
-                data = data.isel(time=0)
-        
-        if variable == "sig0" or variable == "coherent_power":
-            data.values = power_to_db(data.values)
+            if data['time'].size > 1:
+                print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
+            data = data.isel(time=0)
         
         # Get extent of the data
         match data_area:
@@ -571,14 +616,17 @@ class PlotRaster():
         map_obj.set_extent(extents=extents, crs=self.CRS)
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
-        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+        # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         if title is not None:
             map_obj.add_title(title, y=1, fontsize=14)
         else:    
-            time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
-            if data['time'].size > 1:
-                time_str = time_str[0]
+            try:
+                time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
+                if data['time'].size > 1:
+                    time_str = time_str[0]
+            except:
+                time_str = "mean"
             if world_cover_selection is not None:
                 label_data += f" - {world_cover_selection} areas"
             map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=14)
@@ -587,6 +635,9 @@ class PlotRaster():
             m_bkg = map_obj.new_layer()
             m_bkg.add_wms.OpenStreetMap.add_layer.default()
         
+        # Adding missing values
+        m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
+        
         m_data = map_obj.new_layer()
         m_data.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
         m_data.set_shape.raster()
@@ -594,6 +645,7 @@ class PlotRaster():
         m_data.plot_map(vmin=vmin, vmax=vmax, cmap=cmap, **kwargs)
         if add_cbar:
             m_data.add_colorbar()
+            map_obj.ax.legend(handles=[handle], loc='lower left', fontsize=10, handlelength=2, handleheight=1)
         
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -671,12 +723,12 @@ class PlotRaster():
         if show_fig is None:
             show_fig = self.show_fig
         
-        if data_type == "diff":
+        if data_type == "diff" or data_type == "mean":
             add_mean = False
-            print("Warning: The mean data will not be plotted in the histogram with diff data type")
-            
+            print("Warning: The mean data will not be plotted in the histogram with diff or mean data type")
+        
         # Get the data
-        data = self.swot_collection.get_variable(variable, data_area, data_type, world_cover_selection)
+        data = self.swot_collection.get_variable(variable, data_area, data_type, world_cover_selection).copy()
         label_data = self.get_label(variable)
         
         # Get the data on the requested time
@@ -686,10 +738,6 @@ class PlotRaster():
                 if data['time'].size > 1:
                     print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
             data = data.isel(time=0)
-        
-        if variable == "sig0" or variable == "coherent_power":
-            data.values = power_to_db(data.values)
-            
         # Set specific color if world_cover_selection is given
         color = self.select_color_world_cover(color, world_cover_selection)
             
@@ -712,9 +760,7 @@ class PlotRaster():
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_mean:
-            mean_data = self.swot_collection.get_variable(variable, data_area, "mean", world_cover_selection)
-            if variable == "sig0" or variable == "coherent_power":
-                mean_data.values = power_to_db(mean_data.values)
+            mean_data = self.swot_collection.get_variable(variable, data_area, "mean", world_cover_selection).copy()
             if use_seaborn:
                 if range_hist is not None:
                     sns.histplot(mean_data.values.flatten(), element='step', binrange=range_hist, bins=bins, color='grey', alpha=0.5, ax=ax, **kwargs)
@@ -762,6 +808,92 @@ class PlotRaster():
         
         return fig, ax
     
+    def plot_all_histograms(
+        self,
+        variable:str,
+        data_area:str="global",
+        data_type:str="swot",
+        time_selection:str=None,
+        bins:int=100,
+        range_hist:Tuple[float]=None,
+        title:str=None,
+        dpi:int=300,
+        use_seaborn:bool=True,
+        **kwargs
+        ) -> Tuple[plt.Figure, plt.Axes]:
+        """ Create a new figure to plot the histogram of the variable with the three histograms
+        
+        Args:
+            variable (str): the variable to plot
+            data_area (str): the area to plot ('global', 'control', 'flood')
+            data_type (str): the type of data to plot ('swot', 'mean', 'diff')
+            time_selection (str): the time selection to plot. Default is None.
+            bins (int): The number of bins in the histogram. Default is 100.
+            range_hist (Tuple(float)): The range of the histogram. Default is None.
+            title (str): The title of the plot. Default is None.
+            dpi (int): The dpi of the plot to save. Default is 300.
+            use_seaborn (bool): Use seaborn to plot the histogram else use matplotlib. Default is True.
+            **kwargs: Additional arguments to pass to the plotting function
+        Returns:
+            Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
+        """
+        if variable is None:
+            raise ValueError("The variable must be given")
+        if variable not in self.swot_collection.variables:
+            raise ValueError(f"The variable {variable} is not in the collection")
+        
+
+        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+        list_hist = [
+            variable,           
+            data_area,          
+            data_type,          
+            None,               
+            time_selection,     
+            True,
+            fig,                
+            axs[0],          
+            title,              
+            True,              
+            dpi,                
+            bins,  
+            range_hist,  
+            None,           
+            use_seaborn,        
+            False,              
+            False               
+        ]
+
+        list_hist[3] = "open"
+        list_hist[7] = axs[0]
+        list_hist[8] = "Open areas"
+        self.plot_histogram(*list_hist, **kwargs)
+        list_hist[3] = "forest"
+        list_hist[7] = axs[1]
+        list_hist[8] = "Forest areas"
+        self.plot_histogram(*list_hist, **kwargs)
+        list_hist[3] = "urban"
+        list_hist[7] = axs[2]
+        list_hist[8] = "Urban areas"
+        self.plot_histogram(*list_hist, **kwargs)
+        
+        fig.tight_layout()
+        
+        if self.save_fig:
+            try:
+                time_str = self.swot_collection.get_variable(variable, data_area, data_type, None)['time'].dt.strftime("%Y%m%dT%H%M%S").values
+                time_str = time_str.tolist()[0]
+            except:
+                time_str = "mean"
+            title_str = title if title is not None else f"all_hist_{variable}_{data_area}_{data_type}_{time_str}"
+            path = self.PATH_TO_SAVE.joinpath("histograms", title_str + ".png")
+            fig.savefig(path, dpi=dpi)
+        
+        if self.show_fig:
+            fig.show()
+        
+        return fig, axs
+        
     def plot_map_with_histogram(
         self,
         variable:str,
@@ -813,6 +945,12 @@ class PlotRaster():
             raise ValueError("The world cover mask must have at least one element")
         fig, axs = plt.subplots(3, ncols, figsize=(15, 15))
 
+        range_hist = None
+        if vmin is not None and vmax is not None:
+            range_hist = (vmin, vmax)
+        else:
+            print("Warning: The vmin and vmax values are not set. The histogram will be plotted with the default values.")
+            
         list_hist = [
             variable,           
             data_area,          
@@ -825,7 +963,8 @@ class PlotRaster():
             title,              
             True,              
             dpi,                
-            bins,               
+            bins,  
+            range_hist,             
             use_seaborn,        
             False,              
             False               
@@ -884,9 +1023,11 @@ class PlotRaster():
             )
 
         if self.save_fig:
-            time_str = self.swot_collection.get_variable(variable, data_area, data_type, None)['time'].dt.strftime("%Y%m%dT%H%M%S").values
-            if self.swot_collection.get_variable(variable, data_area, data_type, None)['time'].size > 1:
-                time_str = time_str[0]
+            try:
+                time_str = self.swot_collection.get_variable(variable, data_area, data_type, None)['time'].dt.strftime("%Y%m%dT%H%M%S").values
+                time_str = time_str.tolist()[0]
+            except:
+                time_str = "mean"
             title_str = title if title is not None else f"maps_with_hist_{variable}_{data_area}_{data_type}_{time_str}"
             path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
             fig.savefig(path, dpi=dpi)
@@ -934,8 +1075,8 @@ class PlotRaster():
             fig.subplots_adjust(right=0.9)
             
         # get data
-        data = self.swot_collection.get_variable(variable, "control", "swot")
-        data_mean = self.swot_collection.get_variable(variable, "control", "mean")
+        data = self.swot_collection.get_variable(variable, "control", "swot").copy()
+        data_mean = self.swot_collection.get_variable(variable, "control", "mean").copy()
         label_data = self.get_label(variable)
         
         # get the data on the requested time
@@ -948,10 +1089,6 @@ class PlotRaster():
         mask = ~np.isnan(data.values) & ~np.isnan(data_mean.values)
         data = data.where(mask)
         data_mean = data_mean.where(mask)
-        
-        if variable == "sig0" or variable == "coherent_power":
-            data.values = power_to_db(data.values)
-            data_mean.values = power_to_db(data_mean.values)
             
         im = data_mean.plot.imshow(ax=axs[0], cmap=cmap, vmin=vmin, vmax=vmax, add_colorbar=False, add_labels=False)
         axs[0].set_title(f"{label_data} - Mean data")
@@ -1054,10 +1191,6 @@ class PlotRaster():
         data_dates = mean_obj.swot_rasters[variable]
         
         
-        if variable == "sig0" or variable == "coherent_power":
-            data_mean.values = power_to_db(data_mean.values)
-            data_dates.values = power_to_db(data_dates.values)
-        
         no_range = False
         if range is None:
             no_range = True
@@ -1104,23 +1237,17 @@ class PlotRaster():
         data_area:str="global",
         data_type:str="swot",
         time_selection:str=None,
-        thresholds:float|dict=0.8,
-        urban_diff=False,
-        forest_diff=False,
-        open_diff=False,
         add_uncertainty:bool=False,
-        threshold_SNR:float=0.5,
-        threshold_gamma:float=0.5,
         comparing_raster_Path:Path=None,
         add_classif_score:bool=True,
         title:str=None,
         dpi:int=300,
         add_bkg:bool=False,
         add_legend:bool=True,
-        disk_size:int=2,
         extents:List[float]=None,
         fig:plt.Figure=None,
         ax:plt.Axes=None,
+        figsize:Tuple[float, float]=(10, 10),
         **kwargs
     ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the map of the variable with the mask of the thresholds
@@ -1130,20 +1257,16 @@ class PlotRaster():
             data_area (str): the area to plot ('global', 'control', 'flood')
             data_type (str): the type of data to plot ('swot', 'mean', 'diff')
             time_selection (str): the time selection to plot. Default is None.
-            thresholds (float|dict|List[float]): the threshold to mask the data. Can be a float for a global threshold or a dictionary containing values for each pixel class. Default is 0.8.
-            urban_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
-            forest_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
-            open_diff (bool): If True, use "diff" for thresholding else use "swot". Default is False.
             add_uncertainty (bool): Add the classification for SNR/dark water. Default is False.
-            threshold_SNR (float): The threshold to mask the SNR data. Default is 0.5.
             comparing_raster_Path (Path): the path to the raster to compare with. Default is None.
             add_classif_score (bool): Add the classification score. Default is True.
             title (str): The title of the plot. Default is None.
             dpi (int): The dpi of the plot to save. Default is 300.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
             add_legend (bool): Add a legend to the plot. Default is True.
-            disk_size (int): The size of the disk to use for cleaning the mask. Default is 2.
             extents (List[float]): The extents of the map. Default is None.
+            fig (plt.Figure): The figure to plot on. Default is None.
+            ax (plt.Axes): The axes to plot on. Default is None.
             **kwargs: Additional arguments to pass to the plotting function
         Returns:
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
@@ -1158,165 +1281,19 @@ class PlotRaster():
                 "urban": -0.15
             }
         """
-        
         if variable is None:
             raise ValueError("The variable must be given")
-        if variable not in self.swot_collection.variables:
+        if variable not in self.swot_collection.variables and variable != "merged":
             raise ValueError(f"The variable {variable} is not in the collection")
 
-        if isinstance(thresholds, float):
-            thresholds = {
-                "open": thresholds,
-                "forest": thresholds,
-                "urban": thresholds
-            }
-        elif isinstance(thresholds, dict):
-            if "open" not in thresholds:
-                thresholds["open"] = 0.8
-            if "forest" not in thresholds:
-                thresholds["forest"] = 0.8
-            if "urban" not in thresholds:
-                thresholds["urban"] = 0.8
-        else:
-            raise ValueError("The thresholds must be a float or a dictionary")
+        label_data = self.get_label(variable) if variable != "merged" else "Merged flood mask"
+        holes_mask = self.swot_collection.get_holes_mask(data_area, data_type)
+        holes_mask = holes_mask.isel(time=0)
         
-        if urban_diff:
-            data_urban = self.swot_collection.get_variable(variable, data_area, "diff", 'urban')
-        else:
-            data_urban = self.swot_collection.get_variable(variable, data_area, data_type, 'urban')
-            
-        if forest_diff:
-            data_forest = self.swot_collection.get_variable(variable, data_area, "diff", 'forest')
-        else:
-            data_forest = self.swot_collection.get_variable(variable, data_area, data_type, 'forest')
-        if open_diff:
-            data_open = self.swot_collection.get_variable(variable, data_area, "diff", 'open')
-        else:
-            data_open = self.swot_collection.get_variable(variable, data_area, data_type, 'open')
-        data_glob = self.swot_collection.get_variable(variable, data_area, data_type, None)
-
-        label_data = self.get_label(variable)
-
-        if add_uncertainty:
-            data_SNR_urban =  self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'urban')
-            data_SNR_forest = self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'forest')
-            data_SNR_open =   self.swot_collection.get_variable("gamma_SNR", data_area, "swot", 'open')
-            
-            data_urban_gamma_tot =  self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'urban')
-            data_forest_gamma_tot = self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'forest')
-            data_open_gamma_tot =   self.swot_collection.get_variable("gamma_tot", data_area, data_type, 'open')
-            
-            self.swot_collection.floodmask = self.swot_collection.floodmask.to_crs(self.CRS)
-            data_SNR_urban =  data_SNR_urban.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_SNR_forest = data_SNR_forest.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_SNR_open =   data_SNR_open.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            
-            data_flood_urban = data_urban_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_flood_forest = data_forest_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-            data_flood_open = data_open_gamma_tot.rio.clip(self.swot_collection.floodmask.geometry, drop=False)
-
-        # Get the data on the requested time
-        if "time" in data_glob.dims:
-            if time_selection is not None:
-                data_urban = data_urban.sel(time=time_selection)
-                data_forest = data_forest.sel(time=time_selection)
-                data_open = data_open.sel(time=time_selection)
-                data_glob = data_glob.sel(time=time_selection)
-                if add_uncertainty:
-                    data_SNR_urban = data_SNR_urban.sel(time=time_selection)
-                    data_SNR_forest = data_SNR_forest.sel(time=time_selection)
-                    data_SNR_open = data_SNR_open.sel(time=time_selection)
-                    data_flood_urban = data_flood_urban.sel(time=time_selection)
-                    data_flood_forest = data_flood_forest.sel(time=time_selection)
-                    data_flood_open = data_flood_open.sel(time=time_selection)
-            data_urban = data_urban.isel(time=0)
-            data_forest = data_forest.isel(time=0)
-            data_open = data_open.isel(time=0)
-            data_glob = data_glob.isel(time=0)
-            if add_uncertainty:
-                data_SNR_urban = data_SNR_urban.isel(time=0)
-                data_SNR_forest = data_SNR_forest.isel(time=0)
-                data_SNR_open = data_SNR_open.isel(time=0)
-                data_flood_urban = data_flood_urban.isel(time=0)
-                data_flood_forest = data_flood_forest.isel(time=0)
-                data_flood_open = data_flood_open.isel(time=0)
-        holes_mask = np.isnan(data_glob.values) * 1
-
-        if data_type == "diff":
-            from skimage.filters import gaussian
-            # smooth data with gaussian filter
-            gaussian_urban = gaussian(data_urban.values, sigma=1)
-            gaussian_forest = gaussian(data_forest.values, sigma=1)
-            gaussian_open = gaussian(data_open.values, sigma=1)
-            
-            data_urban.values = gaussian_urban
-            data_forest.values = gaussian_forest
-            data_open.values = gaussian_open
-            
-        if data_type == "swot" and not urban_diff:
-            thresholds_apply = abs(thresholds['urban'])
-        else:
-            thresholds_apply = thresholds['urban']
-        if thresholds['urban'] > 0:
-            mask_urban = np.where(data_urban.values > thresholds_apply, 1, 0)
-        else:
-            mask_urban = np.where(data_urban.values < thresholds_apply, 1, 0)
-        if data_type == "swot" and not forest_diff:
-            thresholds_apply = abs(thresholds['forest'])
-        else:
-            thresholds_apply = thresholds['forest']
-        if thresholds['forest'] > 0:
-            mask_forest = np.where(data_forest.values > thresholds_apply, 2, 0)
-        else:
-            mask_forest = np.where(data_forest.values < thresholds_apply, 2, 0)
-        if data_type == "swot" and not open_diff:
-            thresholds_apply = abs(thresholds['open'])
-        else:
-            thresholds_apply = thresholds['open']
-        if thresholds['open'] > 0:
-            mask_open = np.where(data_open.values > thresholds_apply, 3, 0)
-        else:
-            mask_open = np.where(data_open.values < thresholds_apply, 3, 0)
-        mask = mask_urban + mask_forest + mask_open
-
-        if add_uncertainty:
-            if variable == "gamma_tot":
-                mask_darkwater_urban = np.where(data_flood_urban.values < threshold_gamma, 11, 0)
-                mask_darkwater_forest = np.where(data_flood_forest.values < threshold_gamma, 12, 0)
-                mask_darkwater_open = np.where(data_flood_open.values < threshold_gamma, 13, 0)
-                mask_darkwater = mask_darkwater_urban + mask_darkwater_forest + mask_darkwater_open
-                
-            mask_SNR_urban = np.where(data_SNR_urban.values < threshold_SNR, 21, 0)
-            mask_SNR_forest = np.where(data_SNR_forest.values < threshold_SNR, 22, 0)
-            mask_SNR_open = np.where(data_SNR_open.values < threshold_SNR, 23, 0)
-            mask_SNR = mask_SNR_urban + mask_SNR_forest + mask_SNR_open
-            
-        global_mask = mask
-        if add_uncertainty:
-            global_mask[mask_SNR != 0] = mask_SNR[mask_SNR != 0]
-            if variable == "gamma_tot":
-                condition = np.logical_and(mask_SNR == 0, mask_darkwater != 0)
-                global_mask[condition] = mask_darkwater[condition]
+        data = self.swot_collection.get_floodmask_from_variable(variable, data_type, data_area)
+        if data is None:
+            raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
         
-        # majority filter
-        footprint = morphology.disk(disk_size)
-        global_mask = majority(global_mask.astype(np.uint8), footprint=footprint)
-        global_mask = global_mask.astype(float)
-
-        clean_mask = (global_mask != 0) * 1
-        
-        # cleaning mask
-        res = morphology.white_tophat(clean_mask, footprint)
-        clean_mask = np.where(res == 1, 0, clean_mask)
-        clean_mask = binary_erosion(clean_mask, structure=footprint).astype(float)
-        clean_mask = binary_dilation(clean_mask,structure=footprint).astype(float)
-        
-        global_mask = np.where(clean_mask == 1, global_mask, 0)
-        
-        # set mask within a data copy for geolocation
-        data = data_urban.copy()
-        data.values = global_mask
-
         # get flood cmap and labels
         cmap, color_labels = self.get_floodmask_colormap(add_uncertainty)
 
@@ -1336,7 +1313,7 @@ class PlotRaster():
             print(f"f1 score with compared data: {f1_score_compared}")
 
         if add_classif_score:
-            classif = self.swot_collection.get_variable("classification", data_area, "swot", None)
+            classif = self.swot_collection.get_variable("classification", data_area, "swot", None).copy()
             if time_selection  is not None:
                 classif = classif.sel(time=time_selection)
             else: 
@@ -1368,7 +1345,7 @@ class PlotRaster():
         data.values[data.values==0] = np.nan
 
         if fig is None:
-            map_obj = Maps(crs=self.CRS, ax=(3,3,(1,6)), figsize=(10, 10))
+            map_obj = Maps(crs=self.CRS, ax=(1,1,1), figsize=figsize)
         else:
             map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
         
@@ -1391,7 +1368,7 @@ class PlotRaster():
 
         g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
-        c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+        # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         if title is not None:
             map_obj.add_title(title, y=1, fontsize=14)
@@ -1406,11 +1383,14 @@ class PlotRaster():
             m_bkg.add_wms.OpenStreetMap.add_layer.default()
 
 
+        # Adding missing values
+        m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
+        
         m_data = map_obj.new_layer()
         m_data.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
         m_data.set_shape.raster()
 
-        m_data.plot_map(cmap=cmap.to_matplotlib(), norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)
+        m_data.plot_map(cmap=cmap, norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)
 
         if add_classif_score:
             m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
@@ -1422,16 +1402,16 @@ class PlotRaster():
         # add legend for the flood mask
         if add_legend:
             aaxx = map_obj.ax
-            l1 = mpatches.Patch(color='red', label=color_labels[1])
-            l2 = mpatches.Patch(color='forestgreen', label=color_labels[2])
-            l3 = mpatches.Patch(color='cornflowerblue', label=color_labels[3])
+            l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
+            l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
+            l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
             if add_uncertainty:
-                l11 = mpatches.Patch(color='rosybrown', label=color_labels[11])
-                l12 = mpatches.Patch(color='yellowgreen', label=color_labels[12])
-                l13 = mpatches.Patch(color='darkcyan', label=color_labels[13])
-                l21 = mpatches.Patch(color='darkred', label=color_labels[21])
-                l22 = mpatches.Patch(color='darkgreen', label=color_labels[22])
-                l23 = mpatches.Patch(color='darkblue', label=color_labels[23])
+                l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
+                l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
+                l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
+                l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
+                l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
+                l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
                 aaxx.legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower center", fontsize=10, ncols=3, bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1)
             else:
                 aaxx.legend(handles=[l1, l2, l3], fontsize=10,loc="lower center",ncols=3, bbox_to_anchor=(0.5, -.2), handlelength=1, handleheight=1)

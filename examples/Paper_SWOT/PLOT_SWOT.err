@@ -12,5 +12,91 @@
   return x.astype(astype_dtype, **kwargs)
 /data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
   return x.astype(astype_dtype, **kwargs)
-/var/spool/slurm/job48406/slurm_script: line 36: 2129743 Killed                  python3 script_figure_subplots_papier.py
-slurmstepd: error: Detected 1 oom_kill event in StepId=48406.batch. Some of the step tasks have been OOM Killed.
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
+  return 10 * np.log10(power)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
+  return x.astype(astype_dtype, **kwargs)
