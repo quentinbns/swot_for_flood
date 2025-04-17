@@ -26,77 +26,17 @@
   return x.astype(astype_dtype, **kwargs)
 /data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
   return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/scratch/globc/bonassies/workspace/swot_for_flood/auxiliary/tools.py:11: RuntimeWarning: invalid value encountered in log10
-  return 10 * np.log10(power)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
-/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/array/chunk.py:279: RuntimeWarning: invalid value encountered in cast
-  return x.astype(astype_dtype, **kwargs)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/_task_spec.py:745: RuntimeWarning: invalid value encountered in log10
+  return self.func(*new_argspec)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/_task_spec.py:745: RuntimeWarning: invalid value encountered in log10
+  return self.func(*new_argspec)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/_task_spec.py:745: RuntimeWarning: invalid value encountered in log10
+  return self.func(*new_argspec)
+/data/home/globc/bonassies/.conda/envs/conda3.10/lib/python3.10/site-packages/dask/_task_spec.py:745: RuntimeWarning: invalid value encountered in log10
+  return self.func(*new_argspec)
+/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/script_figure_subplots_papier.py:138: UserWarning: Setting the 'color' property will override the edgecolor or facecolor properties.
+  mpatches.Rectangle(
+/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/script_figure_subplots_papier.py:161: UserWarning: Setting the 'color' property will override the edgecolor or facecolor properties.
+  mpatches.Rectangle(
+/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/script_figure_subplots_papier.py:185: UserWarning: Setting the 'color' property will override the edgecolor or facecolor properties.
+  mpatches.Rectangle(
