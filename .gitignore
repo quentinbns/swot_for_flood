@@ -178,4 +178,10 @@ rasters
 gpkg_combined
 data
 aux_data
+old
 S2A
+*.tif
+*.pdf
+*.png
+*.err
+*.out
