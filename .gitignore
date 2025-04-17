@@ -182,3 +182,5 @@ old
 S2A
 Figs
 plots
+*.err
+*.out
