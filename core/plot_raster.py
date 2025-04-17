@@ -383,15 +383,15 @@ class PlotRaster():
 
         # add title
         if title is not None:
-            map_obj.add_title(title, y=1)
+            map_obj.add_title(title, y=1, fontsize=18)
         else:
             if 'time' in data.dims:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
                 if data['time'].size > 1:
                     time_str = time_str[0]
-                map_obj.add_title(f"Auxiliary data - {time_str}", y=1)
+                map_obj.add_title(f"Auxiliary data - {time_str}", y=1, fontsize=18)
             else:
-                map_obj.add_title(f"Auxiliary data - {path_to_raster.stem}", y=1)
+                map_obj.add_title(f"Auxiliary data - {path_to_raster.stem}", y=1, fontsize=18)
             
         # add background
         if add_bkg:
@@ -405,7 +405,8 @@ class PlotRaster():
             m_data.set_shape.raster()
             m_data.plot_map(cmap=cmap, vmin=vmin, vmax=vmax)
         else:
-            show(data, ax=m_data.ax, transform=trfm)
+            data = np.array([data.read(i) for i in range(1, data.count + 1)])
+            show(data, ax=m_data.ax, transform=trfm, adjust=True)
             
         if add_cbar and not is_multiband:
             if not is_worldcover:
@@ -416,7 +417,7 @@ class PlotRaster():
                 for value, label in zip(values_ESAWC, tick_labels_ESAWC):
                     ll.append(mpatches.Patch(color=cmap_ESAWC(value), label=label))
                 
-                aaxx.legend(handles=ll, fontsize=10, loc="upper left", handlelength=1, handleheight=1)
+                aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
                 
         if self.save_fig:
             name_stripped = '_'.join(path_to_raster.stem.split(" "))
@@ -504,13 +505,16 @@ class PlotRaster():
         gl = g.add_labels(where="blr",fontsize=8, every = 2)
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
+        # Adding missing values
+        m_mask, handle = self.add_missing_values("swot", data_area, map_obj, time_selection)
+        
         if title is not None:
-            map_obj.add_title(title, y=1)
+            map_obj.add_title(title, y=1, fontsize=18)
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
-            map_obj.add_title(f"{label_data} - {time_str}", y=1)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
             
         map_obj.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
         map_obj.set_shape.raster()
@@ -555,6 +559,7 @@ class PlotRaster():
         vmax:float=None,
         add_bkg:bool=True,
         add_cbar:bool=True,
+        add_legend:bool=False,
         save_fig:bool=None,
         show_fig:bool=None,
         figsize:Tuple[int, int]=(10, 10),
@@ -578,6 +583,10 @@ class PlotRaster():
             vmax (float): The maximum value of the colormap. Default is None.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is True.
             add_cbar (bool): Add a colorbar. Default is True.
+            add_legend (bool): Add a legend to the plot. Default is False.
+            save_fig (bool): Save the figure. Default is False.
+            show_fig (bool): Show the figure. Default is False.
+            figsize (Tuple[int, int]): The size of the figure. Default is (10, 10).
             **kwargs: Additional arguments to pass to the plotting function
         Returns:
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
@@ -623,7 +632,7 @@ class PlotRaster():
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=14)
+            map_obj.add_title(title, y=1, fontsize=18)
         else:    
             try:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
@@ -633,7 +642,7 @@ class PlotRaster():
                 time_str = "mean"
             if world_cover_selection is not None:
                 label_data += f" - {world_cover_selection} areas"
-            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=14)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
         
         if add_bkg:
             m_bkg = map_obj.new_layer()
@@ -649,6 +658,8 @@ class PlotRaster():
         m_data.plot_map(vmin=vmin, vmax=vmax, cmap=cmap, **kwargs)
         if add_cbar:
             m_data.add_colorbar()
+            
+        if add_legend:
             map_obj.ax.legend(handles=[handle], loc='lower left', fontsize=10, handlelength=2, handleheight=1)
         
         if save_fig:
@@ -759,6 +770,15 @@ class PlotRaster():
             else:
                 ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, **kwargs)
             median_data = np.nanmean(data.values.flatten())
+            if world_cover_selection == "urban":
+                self.median_urban = median_data
+            elif world_cover_selection == "forest":
+                self.median_forest = median_data
+            elif world_cover_selection == "open":
+                self.median_open = median_data
+            else:
+                self.median_global = median_data
+            
         ax.axvline(median_data, color=color, linestyle='dashed', linewidth=1)
         ax.text(median_data, y_text, f"Median: {median_data:.2f}", color=color, rotation=90, ha=ha, va=va, transform=ax.get_xaxis_transform(),
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
@@ -776,6 +796,14 @@ class PlotRaster():
                 else:
                     ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, **kwargs)
             median_mean = np.nanmean(mean_data.values.flatten())
+            if world_cover_selection == "urban":
+                self.median_mean_urban = median_mean
+            elif world_cover_selection == "forest":
+                self.median_mean_forest = median_mean
+            elif world_cover_selection == "open":
+                self.median_mean_open = median_mean
+            else:
+                self.median_mean_global = median_mean
             ax.axvline(median_mean, color='grey', linestyle='dashed', linewidth=1)
             ax.text(median_mean, y_text_mean, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha=ha_mean, transform=ax.get_xaxis_transform(),
                     path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
@@ -788,14 +816,14 @@ class PlotRaster():
         
         if set_title:
             if title is not None:
-                ax.set_title(title, fontsize=14)
+                ax.set_title(title, fontsize=18)
             else:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
                 if data['time'].size > 1:
                     time_str = time_str[0]
                 if world_cover_selection is not None:
                     label_data += f" - {world_cover_selection} areas"
-                ax.set_title(f"{label_data} - {time_str}", fontsize=14)
+                ax.set_title(f"{label_data} - {time_str}", fontsize=18)
         
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -1120,9 +1148,9 @@ class PlotRaster():
             if data['time'].size > 1:
                 str_time = str_time[0]
         
-            axs[1].set_title(f"{label_data} - {str_time}", fontsize=14)
+            axs[1].set_title(f"{label_data} - {str_time}", fontsize=18)
         else:
-            axs[1].set_title(f"{label_data}", fontsize=14)
+            axs[1].set_title(f"{label_data}", fontsize=18)
         
         self.plot_histogram(
             variable=variable,
@@ -1191,10 +1219,12 @@ class PlotRaster():
             fig, ax = plt.subplots(1, 1, figsize=(5, 5))
             
         # get data
-        data_mean = mean_obj.swot_mean[variable]
-        data_dates = mean_obj.swot_rasters[variable]
-        
-        
+        data_mean = self.swot_collection.get_variable(variable, "global", "mean").copy()
+        data_dates = self.swot_collection.swot_mean.swot_rasters[variable].copy()
+        if variable in ["sig0", "coherent_power"]:
+            from auxiliary.tools import power_to_db
+            data_dates = power_to_db(data_dates)
+            
         no_range = False
         if range is None:
             no_range = True
@@ -1220,7 +1250,7 @@ class PlotRaster():
             ax.legend(fontsize=11)
         
         if title is not None:
-            ax.set_title(title, fontsize=14)
+            ax.set_title(title, fontsize=18)
         
         if self.save_fig:
             time_str = data_dates['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -1375,12 +1405,12 @@ class PlotRaster():
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=14)
+            map_obj.add_title(title, y=1, fontsize=18)
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
-            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=14)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
 
         if add_bkg:
             m_bkg = map_obj.new_layer()
@@ -1397,11 +1427,11 @@ class PlotRaster():
         m_data.plot_map(cmap=cmap, norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)
 
         if add_classif_score:
-            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
         if comparing_raster_Path is not None:
-            m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+            m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
             if add_classif_score:
-                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", fontsize=10, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
 
         # add legend for the flood mask
         if add_legend:
