@@ -180,6 +180,8 @@ data
 aux_data
 old
 S2A
+Figs
+plots
 *.tif
 *.pdf
 *.png
