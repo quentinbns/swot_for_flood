@@ -16,7 +16,7 @@ from auxiliary.tools import ufunc_where, power_to_db
 CONDITIONS_WORLDCOVER = {
     "urban": 50,
     "forest": 10,
-    "permament_water": 80
+    "permanent_water": 80
 }
 
 class SwotRaster():
@@ -180,11 +180,11 @@ class SwotRaster():
         """ Mask SWOT data with the world cover data """
         condition_urban = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["urban"]
         condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
-        condition_permament_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permament_water"]
+        condition_permanent_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permanent_water"]
         condition_open = np.logical_and(~ condition_forest,
             np.logical_and(
                 ~ condition_urban,
-                ~ condition_permament_water)
+                ~ condition_permanent_water)
             )
         SWOT_urban = xr.apply_ufunc(ufunc_where, SWOT_array, condition_urban, dask='parallelized')
         SWOT_forest = xr.apply_ufunc(ufunc_where, SWOT_array, condition_forest, dask='parallelized')
@@ -292,7 +292,7 @@ class SwotMean():
     def compute_mean(self):
         """ Create a mean of the SWOT Rasters data """
         self.swot_mean = self.swot_rasters.mean(dim='time')
-        self.holes_mean = self.swot_mean.where(self.swot_mean != np.nan)
+        self.holes_mean = self.swot_mean[self.variables[0]] == np.nan
         
         self.controlmask = self.controlmask.to_crs(self.raster_crs)
         self.floodmask = self.floodmask.to_crs(self.raster_crs)
@@ -862,7 +862,51 @@ class SwotCollection():
                         raise ValueError(f"Data type {data_type} not in the list of types")
             case _:
                 raise ValueError(f"Data area {data_area} not in the list of areas")
+    
+    def save_tiff(self, variable:str, is_mask:bool=True, make_binary:bool=False, remove_lowcoh:bool=True, data_area:str="global", data_type:str="swot", world_cover_selection:str=None, path:Path=None, time_selection:str=None)->None:
+        """ Save the variable to a tiff file
         
+        Args:
+            variable (str): the variable to save
+            is_mask (bool): if the variable is a mask
+            make_binary (bool): if the water mask is save as a binary variable
+            remove_lowcoh (bool): if True, the low coherence is removed when make_binary is True else, only low_SNR is remove from mask
+            data_area (str): the area to save the data (global, control or flood)
+            data_type (str): the type of data to save (swot, mean, diff)
+            world_cover_selection (str): the world cover selection to save the data (None, urban, forest, open)
+            path (Path): the path to save the tiff file
+            time_selection (str): the time selection to save the data (None, date)
+        """
+        if path is None:
+            raise ValueError("Path is None")
+        if not isinstance(path, Path):
+            raise ValueError("Path is not a Path object")
+        if not path.parent.exists():
+            raise ValueError(f"Path {path} does not exist")
+        if is_mask:
+            data = self.get_floodmask_from_variable(variable, data_type, data_area)
+            if make_binary:
+                if remove_lowcoh:
+                    condition = np.logical_and(data.values != 0, data.values < 10) * 1.
+                else:
+                    condition = np.logical_and(data.values != 0, data.values < 20) * 1.
+                data.values = np.where(condition, 1, 0)
+        else:
+            data = self.get_variable(variable, data_area, data_type, world_cover_selection)
+        
+        data.values = np.where(data.values == np.nan, -9999, data.values)
+        
+        if data is None:
+            raise ValueError(f"Data is None")
+        
+        if time_selection is not None:
+            if "time" in data.dims:
+                data = data.sel(time=time_selection)
+            else:
+                print("Time selection is not possible with this variable")
+                
+        data.rio.to_raster(path, driver="GTiff", nodata=-9999, dtype="float32")
+    
     def get_variable(self, variable:str, data_area:str="global", data_type:str="swot", world_cover_selection:str=None)->xr.DataArray:
         """ Get the variable from the SWOT Raster data
         
@@ -1183,4 +1227,189 @@ class SwotCollection():
         data.values = global_mask
         
         self.set_floodmask_from_variable(variable, data_type, data_area, data)
+        
+    def pretreat_data_for_score(
+        self, 
+        variable, 
+        compared_raster_path:Path | str, 
+        data_area:str="flood",
+        data_type:str="swot",
+        time_selection:str=None,
+        water_value=1,
+        nan_value:float=np.nan
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """ Pretreat the data for the critical success index
+        
+        Args:
+            variable (str): the variable to compute the critical success index
+            compared_raster_path (Path | str): the path to the compared raster data or "classification" to use the classification data
+            data_area (str): the area to get the data (global, control or flood). Default is flood
+            data_type (str): the type of data to get (swot, mean, diff). Default is swot
+            time_selection (str): the time selection to get the data. Default is None
+            water_value (int): the value of water in the compared raster data. Default is 1
+            nan_value (float): the value of nan in the compared raster data. Default is np.nan
+        
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: the SWOT Raster data and the compared raster data
+        """
+        def classif_filter(data):
+            condition_classification = data.values >= 3 # Every water class
+            return condition_classification
     
+        if variable is None:
+            raise ValueError("The variable must be given")
+        if variable not in self.variables and variable != "merged":
+            raise ValueError(f"The variable {variable} is not in the collection")
+        holes_mask = self.get_holes_mask(data_area, data_type)
+        holes_mask = holes_mask.isel(time=0)
+        
+        if variable != "classification":
+            data = self.get_floodmask_from_variable(variable, data_type, data_area)
+            if "time" in data.dims:
+                data = data.sel(time=time_selection)
+                if data.time.values.size > 1:
+                    data = data.isel(time=0)
+            
+            if data is None:
+                raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
+            
+            mask_data = np.logical_and(data.values != 0, data.values < 20) * 1. # discard dry and low SNR data
+        
+        else:
+            data = self.get_variable(variable, data_area, data_type)
+            if "time" in data.dims:
+                data = data.sel(time=time_selection)
+                if data.time.values.size > 1:
+                    data = data.isel(time=0)
+            mask_data = (classif_filter(data) * 1.)
+            mask_data = mask_data[0]
+        
+        if data_area == "flood":
+            esa_wc = self.ESA_WC_FLOOD
+        elif data_area == "control":
+            esa_wc = self.ESA_WC_CONTROL
+        elif data_area == "global":
+            esa_wc = self.ESA_WC
+        permanent_water = np.where(esa_wc['band_1'].values == CONDITIONS_WORLDCOVER['permanent_water'], 1, 0)
+        
+        # read the compared raster data
+        if isinstance(compared_raster_path, Path):
+            comparing_raster = rxr.open_rasterio(compared_raster_path)
+            if data_area == "flood":
+                comparing_raster = comparing_raster.rio.clip(self.floodmask.geometry)
+            elif data_area == "control":
+                comparing_raster = comparing_raster.rio.clip(self.controlmask.geometry)
+            mask_compared = np.where(comparing_raster.values == water_value, 1., 0.)[0]
+            holes_compared = np.where(comparing_raster.values == nan_value, 1., 0.)[0]
+        else:
+            comparing_raster = self.get_variable(compared_raster_path, data_area, data_type)
+            if "time" in comparing_raster.dims:
+                comparing_raster = comparing_raster.sel(time=time_selection)
+                if comparing_raster.time.values.size > 1:
+                    comparing_raster = comparing_raster.isel(time=0)
+            
+            mask_compared = np.where(classif_filter(comparing_raster), 1., 0.)[0]
+            holes_compared = holes_mask
+        
+        # removing holes from SWOT
+        mask_compared[holes_mask == 1] = np.nan
+        mask_data[holes_mask == 1] = np.nan
+        
+        # removing holes from compared raster
+        mask_compared[holes_compared == 1] = np.nan
+        mask_data[holes_compared == 1] = np.nan
+        
+        # removing permanent water
+        mask_compared[permanent_water == 1] = np.nan
+        mask_data[permanent_water == 1] = np.nan
+        
+        return mask_data, mask_compared
+        
+    def compute_scores(
+        self, 
+        variable, 
+        compared_raster_path:Path | str, 
+        data_area:str="flood",
+        data_type:str="swot",
+        time_selection:str=None,
+        water_value=1,
+        nan_value:float=np.nan
+        ) -> Tuple[float, float, float]:
+        """ Compute the critical success index, F1-score and Cohen’s kappa index between the SWOT Raster data and the compared raster data
+        
+        Args:
+            variable (str): the variable to compute the critical success index
+            compared_raster_path (Path | str): the path to the compared raster data or "classification" to use the classification data
+            data_area (str): the area to get the data (global, control or flood). Default is flood
+            data_type (str): the type of data to get (swot, mean, diff). Default is swot
+            time_selection (str): the time selection to get the data. Default is None
+            water_value (int): the value of water in the compared raster data. Default is 1
+        
+        Returns:
+            Tuple[float, float, float]: the critical success index, F1-score and Cohen’s kappa index
+        """
+        mask_data, mask_compared = self.pretreat_data_for_score(
+            variable, 
+            compared_raster_path, 
+            data_area, 
+            data_type, 
+            time_selection, 
+            water_value, 
+            nan_value
+            )
+        
+        if np.count_nonzero(~np.isnan(mask_compared)) != np.count_nonzero(~np.isnan(mask_data)):
+            print("WARNING: The compared raster and the SWOT Raster data have not the same non-nan number of pixels")
+        
+        # compute TP, FP, TN, FN
+        true = mask_compared
+        pred = mask_data
+        
+        contingency_map = np.ones(true.shape) * np.nan
+        contingency_map[np.logical_and(true == 1, pred == 1)] = 1 #'TP'
+        contingency_map[np.logical_and(true == 0, pred == 0)] = 0 #'TN'
+        contingency_map[np.logical_and(true == 0, pred == 1)] = 2 #'FP'
+        contingency_map[np.logical_and(true == 1, pred == 0)] = 3 #'FN'
+        
+        TP_scale = np.nansum(contingency_map == 1)
+        TN_scale = np.nansum(contingency_map == 0)
+        FP_scale = np.nansum(contingency_map == 2)
+        FN_scale = np.nansum(contingency_map == 3)
+        total = TP_scale + FP_scale + TN_scale + FN_scale
+        if total != (~np.isnan(true)).flatten().sum():
+            print("WARNING: The sum of TP, FP, TN and FN is not equal to the number of non-nan pixels in the compared raster data")
+            
+            
+        # compute precision and recall
+        if TP_scale + FP_scale == 0:
+            precision = 0
+        else:
+            precision = TP_scale / (TP_scale + FP_scale)
+        if TP_scale + FN_scale == 0:
+            recall = 0
+        else:
+            recall = TP_scale / (TP_scale + FN_scale)
+            
+        # compute F1-score
+        if precision + recall == 0:
+            f1_score = 0
+        else:
+            f1_score = 2 * (precision * recall) / (precision + recall)
+            
+        # compute critical success index (CSI)
+        if TP_scale + FP_scale + FN_scale == 0:
+            CSI = 0
+        else:
+            CSI = TP_scale / (TP_scale + FP_scale + FN_scale)
+            
+        # compute Cohen’s kappa index
+        total = (TP_scale + FP_scale + FN_scale + TN_scale)
+        po = (TP_scale + TN_scale) / total
+        pe = ((TP_scale + FN_scale) / total) * ((TP_scale + FP_scale) / total)
+        
+        if ((1 - pe) == 0):
+            kappa = 0
+        else:
+            kappa = (po - pe) / (1 - pe)
+            
+        return CSI, f1_score, kappa

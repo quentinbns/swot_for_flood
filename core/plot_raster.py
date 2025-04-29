@@ -28,6 +28,19 @@ from auxiliary.cbar_ESA_WC import *
 from auxiliary.cbar_SWOT import *
 from auxiliary.plot_variables import *
 
+
+# By default make the fontsize bigger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 20,
+    'axes.labelsize': 12,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 14,
+    'figure.titlesize': 20,
+    }
+)
+
 class PlotRaster():
     """ Uses the SWOT_RASTER, SWOT_COLLECTION or SWOT_MEAN classes as input data to plot the raster data """
     def __init__(self, project:SwotProject, save_fig:bool=True, show_fig:bool=False):
@@ -301,7 +314,8 @@ class PlotRaster():
         ax:plt.Axes=None,
         dpi:int=300,
         add_bkg:bool=False,
-        add_cbar:bool=True
+        add_cbar:bool=True,
+        constraint_range:Tuple[float, float]=None,
     ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the auxiliary data
         
@@ -319,6 +333,7 @@ class PlotRaster():
             dpi (int): The dpi of the plot to save. Default is 300.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
             add_cbar (bool): Add a colorbar. Default is True.
+            constraint_range (Tuple[float, float]): The range of the data for RGB image. Default is None.
         Returns:
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
         """
@@ -360,7 +375,9 @@ class PlotRaster():
             trfm = data.transform
             
         if make_mask:
-            data.values = np.where(data.values == mask_value, 1, 0)
+            grey = np.where(np.logical_or(data.values == 6, data.values == 7), 0.5, 0) #FloodML cloud index
+            data.values = np.where(data.values == mask_value, 1, grey)
+            
             
         # Get extent of the data
         match data_area:
@@ -377,21 +394,21 @@ class PlotRaster():
         # set extent and crs
         map_obj.set_extent(extents=extents, crs=self.CRS)
 
-        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
-        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=9999, ec="darkgrey")
+        gl = g.add_labels(where="blr", every=4)
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         # add title
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=18)
+            map_obj.add_title(title, y=1)
         else:
             if 'time' in data.dims:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
                 if data['time'].size > 1:
                     time_str = time_str[0]
-                map_obj.add_title(f"Auxiliary data - {time_str}", y=1, fontsize=18)
+                map_obj.add_title(f"Auxiliary data - {time_str}", y=1)
             else:
-                map_obj.add_title(f"Auxiliary data - {path_to_raster.stem}", y=1, fontsize=18)
+                map_obj.add_title(f"Auxiliary data - {path_to_raster.stem}", y=1)
             
         # add background
         if add_bkg:
@@ -406,18 +423,21 @@ class PlotRaster():
             m_data.plot_map(cmap=cmap, vmin=vmin, vmax=vmax)
         else:
             data = np.array([data.read(i) for i in range(1, data.count + 1)])
-            show(data, ax=m_data.ax, transform=trfm, adjust=True)
+            if constraint_range is not None:
+                data = np.clip(data, constraint_range[0], constraint_range[1])
+                
+            show(data, ax=m_data.ax, transform=trfm, adjust=True, vmin=vmin, vmax=vmax)
             
         if add_cbar and not is_multiband:
             if not is_worldcover:
-                m_data.add_colorbar(label=data.name, hist_size=0, shrink=0.5, pad=0.05)
+                m_data.add_colorbar(label=data.name, hist_size=0, shrink=0.5, pad=0.05, vmin=vmin, vmax=vmax)
             else:
                 aaxx = map_obj.ax
                 ll = []
                 for value, label in zip(values_ESAWC, tick_labels_ESAWC):
                     ll.append(mpatches.Patch(color=cmap_ESAWC(value), label=label))
                 
-                aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
+                aaxx.legend(handles=ll, loc="lower right", handlelength=1, handleheight=1)
                 
         if self.save_fig:
             name_stripped = '_'.join(path_to_raster.stem.split(" "))
@@ -501,20 +521,20 @@ class PlotRaster():
         # create map
         
         map_obj.set_extent(extents=extents, crs=self.CRS)
-        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
-        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=9999, ec="darkgrey")
+        gl = g.add_labels(where="blr", every=4)
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         # Adding missing values
         m_mask, handle = self.add_missing_values("swot", data_area, map_obj, time_selection)
         
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=18)
+            map_obj.add_title(title, y=1, )
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
-            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, )
             
         map_obj.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
         map_obj.set_shape.raster()
@@ -528,7 +548,7 @@ class PlotRaster():
             for value, label in zip(values_SWOT, tick_labels_SWOT):
                 ll.append(mpatches.Patch(color=cmap_SWOT(value), label=label))
             
-            aaxx.legend(handles=ll, fontsize=10, loc="lower right", handlelength=1, handleheight=1)
+            aaxx.legend(handles=ll,  loc="lower right", handlelength=1, handleheight=1)
             
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -627,12 +647,12 @@ class PlotRaster():
         
         map_obj = Maps(crs=self.CRS, f=fig, ax=ax, figsize=figsize)
         map_obj.set_extent(extents=extents, crs=self.CRS)
-        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
-        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=9999, ec="darkgrey")
+        gl = g.add_labels(where="blr", every=4)
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
         
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=18)
+            map_obj.add_title(title, y=1, )
         else:    
             try:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
@@ -642,7 +662,7 @@ class PlotRaster():
                 time_str = "mean"
             if world_cover_selection is not None:
                 label_data += f" - {world_cover_selection} areas"
-            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, )
         
         if add_bkg:
             m_bkg = map_obj.new_layer()
@@ -660,7 +680,7 @@ class PlotRaster():
             m_data.add_colorbar()
             
         if add_legend:
-            map_obj.ax.legend(handles=[handle], loc='lower left', fontsize=10, handlelength=2, handleheight=1)
+            map_obj.ax.legend(handles=[handle], loc='lower left',  handlelength=2, handleheight=1)
         
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -780,8 +800,8 @@ class PlotRaster():
                 self.median_global = median_data
             
         ax.axvline(median_data, color=color, linestyle='dashed', linewidth=1)
-        ax.text(median_data, y_text, f"Median: {median_data:.2f}", color=color, rotation=90, ha=ha, va=va, transform=ax.get_xaxis_transform(),
-                    path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
+        # ax.text(median_data, y_text, f"Median: {median_data:.2f}", color=color, rotation=90, ha=ha, va=va, transform=ax.get_xaxis_transform(),
+                    # path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_mean:
             mean_data = self.swot_collection.get_variable(variable, data_area, "mean", world_cover_selection).copy()
@@ -805,8 +825,8 @@ class PlotRaster():
             else:
                 self.median_mean_global = median_mean
             ax.axvline(median_mean, color='grey', linestyle='dashed', linewidth=1)
-            ax.text(median_mean, y_text_mean, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha=ha_mean, transform=ax.get_xaxis_transform(),
-                    path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
+            # ax.text(median_mean, y_text_mean, f"Median: {median_mean:.2f}", color='grey', rotation=90, ha=ha_mean, transform=ax.get_xaxis_transform(),
+            #         path_effects=[patheffects.withStroke(linewidth=3, foreground='w')])
         
         if add_xlabel:
             ax.set_xlabel(label_data)
@@ -816,14 +836,14 @@ class PlotRaster():
         
         if set_title:
             if title is not None:
-                ax.set_title(title, fontsize=18)
+                ax.set_title(title, )
             else:
                 time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
                 if data['time'].size > 1:
                     time_str = time_str[0]
                 if world_cover_selection is not None:
                     label_data += f" - {world_cover_selection} areas"
-                ax.set_title(f"{label_data} - {time_str}", fontsize=18)
+                ax.set_title(f"{label_data} - {time_str}", )
         
         if save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -1129,7 +1149,7 @@ class PlotRaster():
         
         axs[0].get_xaxis().set_visible(False)
         if y_label is not None:
-            axs[0].set_ylabel(y_label, fontsize=12, fontweight='bold')
+            axs[0].set_ylabel(y_label, fontweight='bold')
             # remove ticks labels
             axs[0].get_yaxis().set_tick_params(labelsize=0)
         else:
@@ -1148,9 +1168,9 @@ class PlotRaster():
             if data['time'].size > 1:
                 str_time = str_time[0]
         
-            axs[1].set_title(f"{label_data} - {str_time}", fontsize=18)
+            axs[1].set_title(f"{label_data} - {str_time}", )
         else:
-            axs[1].set_title(f"{label_data}", fontsize=18)
+            axs[1].set_title(f"{label_data}", )
         
         self.plot_histogram(
             variable=variable,
@@ -1247,10 +1267,10 @@ class PlotRaster():
             ax.set_xlim(hist_range)
             
         if add_legend:
-            ax.legend(fontsize=11)
+            ax.legend()
         
         if title is not None:
-            ax.set_title(title, fontsize=18)
+            ax.set_title(title, )
         
         if self.save_fig:
             time_str = data_dates['time'].dt.strftime("%Y%m%dT%H%M%S").values
@@ -1271,9 +1291,8 @@ class PlotRaster():
         data_area:str="global",
         data_type:str="swot",
         time_selection:str=None,
-        add_uncertainty:bool=False,
+        add_scores:bool=True,
         comparing_raster_Path:Path=None,
-        add_classif_score:bool=True,
         title:str=None,
         dpi:int=300,
         add_bkg:bool=False,
@@ -1293,7 +1312,7 @@ class PlotRaster():
             time_selection (str): the time selection to plot. Default is None.
             add_uncertainty (bool): Add the classification for SNR/dark water. Default is False.
             comparing_raster_Path (Path): the path to the raster to compare with. Default is None.
-            add_classif_score (bool): Add the classification score. Default is True.
+            add_scores (bool): Add the score to the maps. Default is True.
             title (str): The title of the plot. Default is None.
             dpi (int): The dpi of the plot to save. Default is 300.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
@@ -1329,9 +1348,9 @@ class PlotRaster():
             raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
         
         # get flood cmap and labels
-        cmap, color_labels = self.get_floodmask_colormap(add_uncertainty)
+        cmap, color_labels = self.get_floodmask_colormap(True)
 
-        if comparing_raster_Path is not None:
+        if comparing_raster_Path is not None and add_scores:
             comparing_raster = rxr.open_rasterio(comparing_raster_Path)
             mask_compared = np.where(comparing_raster.values == 1, 1., 0.)[0]
             mask_compared[holes_mask] = np.nan
@@ -1346,7 +1365,7 @@ class PlotRaster():
             f1_score_compared = self.f1_score(mask_compared.flatten(), mask_data.flatten())
             print(f"f1 score with compared data: {f1_score_compared}")
 
-        if add_classif_score:
+        if add_scores:
             classif = self.swot_collection.get_variable("classification", data_area, "swot", None).copy()
             if time_selection  is not None:
                 classif = classif.sel(time=time_selection)
@@ -1400,17 +1419,17 @@ class PlotRaster():
             crs_extents = 4326
         map_obj.set_extent(extents=extents, crs=crs_extents)
 
-        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=0)
-        gl = g.add_labels(where="blr",fontsize=8, every = 2)
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=9999, ec="darkgrey")
+        gl = g.add_labels(where="blr", every=4)
         # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
 
         if title is not None:
-            map_obj.add_title(title, y=1, fontsize=18)
+            map_obj.add_title(title, y=1, )
         else:    
             time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
             if data['time'].size > 1:
                 time_str = time_str[0]
-            map_obj.add_title(f"{label_data} - {time_str}", y=1, fontsize=18)
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, )
 
         if add_bkg:
             m_bkg = map_obj.new_layer()
@@ -1426,12 +1445,11 @@ class PlotRaster():
 
         m_data.plot_map(cmap=cmap, norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)
 
-        if add_classif_score:
-            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
-        if comparing_raster_Path is not None:
-            m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
-            if add_classif_score:
-                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", fontsize=14, color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+        if add_scores:
+            m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+            if comparing_raster_Path is not None:
+                m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+            m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
 
         # add legend for the flood mask
         if add_legend:
@@ -1439,22 +1457,181 @@ class PlotRaster():
             l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
             l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
             l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
-            if add_uncertainty:
-                l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
-                l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
-                l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
-                l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
-                l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
-                l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
-                aaxx.legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower center", fontsize=10, ncols=3, bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1)
-            else:
-                aaxx.legend(handles=[l1, l2, l3], fontsize=10,loc="lower center",ncols=3, bbox_to_anchor=(0.5, -.2), handlelength=1, handleheight=1)
+            l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
+            l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
+            l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
+            l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
+            l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
+            l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
+            aaxx.legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower center",  ncols=3, bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1)
 
         if self.save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
             if data['time'].size > 1:
                 time_str = time_str[0]
             title_str = title if title is not None else f"floodmask_{variable}_{data_area}_{data_type}_{time_str}"
+            path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
+            m_data.savefig(path, dpi=dpi)
+
+        if self.show_fig:
+            m_data.show()
+
+        return map_obj.f, map_obj.f.axes
+       
+    def plot_map_compare_masks(
+        self,
+        variable:str,
+        data_area:str="global",
+        data_type:str="swot",
+        time_selection:str=None,
+        comparing_raster_Path:Path=None,
+        water_value:int=1,
+        compared_legend:str="FloodML water mask",
+        swot_legend:str="SWOT water mask",
+        cmap_swot:str='GnBu',
+        cmap_compared:str='cividis',
+        title:str=None,
+        dpi:int=300,
+        add_bkg:bool=False,
+        add_legend:bool=True,
+        extents:List[float]=None,
+        fig:plt.Figure=None,
+        ax:plt.Axes=None,
+        figsize:Tuple[float, float]=(10, 10),
+        **kwargs
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """ Plot the map of the variable with the mask of the thresholds
+        
+        Args:
+            variable (str): the variable to plot
+            data_area (str): the area to plot ('global', 'control', 'flood')
+            data_type (str): the type of data to plot ('swot', 'mean', 'diff')
+            time_selection (str): the time selection to plot. Default is None.
+            add_uncertainty (bool): Add the classification for SNR/dark water. Default is False.
+            comparing_raster_Path (Path): the path to the raster to compare with. Default is None.
+            water_value (int): The value of the water in the comparing raster. Default is 1.
+            compared_legend (str): The legend of the compared raster. Default is "Flooded FloodML mask".
+            swot_legend (str): The legend of the swot raster. Default is "Flooded SWOT mask".
+            cmap_swot (str): The colormap to use for the swot raster. Default is 'Blues'.
+            cmap_compared (str): The colormap to use for the compared raster. Default is 'Reds'.
+            title (str): The title of the plot. Default is None.
+            dpi (int): The dpi of the plot to save. Default is 300.
+            add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
+            add_legend (bool): Add a legend to the plot. Default is True.
+            extents (List[float]): The extents of the map. Default is None.
+            fig (plt.Figure): The figure to plot on. Default is None.
+            ax (plt.Axes): The axes to plot on. Default is None.
+            **kwargs: Additional arguments to pass to the plotting function
+        Returns:
+            Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
+        """
+        if variable is None:
+            raise ValueError("The variable must be given")
+        if variable not in self.swot_collection.variables and variable != "merged":
+            raise ValueError(f"The variable {variable} is not in the collection")
+
+        label_data = self.get_label(variable) if variable != "merged" else "Merged flood mask"
+        holes_mask = self.swot_collection.get_holes_mask(data_area, data_type)
+        holes_mask = holes_mask.isel(time=0)
+        
+        data = self.swot_collection.get_floodmask_from_variable(variable, data_type, data_area)
+        if data is None:
+            raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
+
+        if data_area == "flood":
+            esa_wc = self.swot_collection.ESA_WC_FLOOD
+        elif data_area == "control":
+            esa_wc = self.swot_collection.ESA_WC_CONTROL
+        elif data_area == "global":
+            esa_wc = self.swot_collection.ESA_WC
+        permanent_water = np.where(esa_wc['band_1'].values == 80, 1, 0) # permanent water class = 80
+        
+        if comparing_raster_Path is not None:
+            comparing_raster = rxr.open_rasterio(comparing_raster_Path)
+            if data_area == "flood":
+                comparing_raster = comparing_raster.rio.clip(self.floodmask.geometry)
+            elif data_area == "control":
+                comparing_raster = comparing_raster.rio.clip(self.controlmask.geometry)
+            mask_compared = np.where(comparing_raster.values == water_value, 1., 0.)[0]
+            mask_compared[holes_mask] = np.nan
+            mask_compared[mask_compared == 0] = np.nan
+            
+            mask_data = np.logical_and(data.values != 0, data.values < 20) * 1.
+            mask_data[holes_mask] = np.nan
+            
+        # removing permanent water
+        mask_compared[permanent_water == 1] = np.nan
+        mask_data[permanent_water == 1] = np.nan
+
+        data.values = data.values.astype(float)
+        data.values = np.where(mask_data == 1, 1., np.nan)
+        
+        if fig is None:
+            map_obj = Maps(crs=self.CRS, ax=(1,1,1), figsize=figsize)
+        else:
+            map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
+        
+        # Get extent of the data
+        if extents is None:
+            match data_area:
+                case "global":
+                    poly = self.BBOX
+                    extents = [poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]]
+                case "control":
+                    poly = self.swot_collection.controlmask
+                    extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+                case "flood":
+                    poly = self.swot_collection.floodmask
+                    extents = [poly.bounds["minx"], poly.bounds["maxx"], poly.bounds["miny"], poly.bounds["maxy"]]
+            crs_extents = self.CRS
+        else:
+            crs_extents = 4326
+        map_obj.set_extent(extents=extents, crs=crs_extents)
+
+        g = map_obj.add_gridlines(lw=0.25, alpha=0.5, zorder=9999, ec="darkgrey")
+        # gl = g.add_labels(where="blr", every=4)
+        # c = map_obj.add_compass(style='compass', pos=(0.9, 0.85), scale=7)
+
+        if title is not None:
+            map_obj.add_title(title, y=1, )
+        else:    
+            time_str = data['time'].dt.strftime("%Y-%m-%d %H:%M").values
+            if data['time'].size > 1:
+                time_str = time_str[0]
+            map_obj.add_title(f"{label_data} - {time_str}", y=1, )
+
+        if add_bkg:
+            m_bkg = map_obj.new_layer()
+            m_bkg.add_wms.OpenStreetMap.add_layer.default()
+
+
+        # Adding missing values
+        m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
+        
+        m_data = map_obj.new_layer()
+        m_data.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
+        m_data.set_shape.raster()
+        m_data.plot_map(cmap=cmap_swot, vmin=0, vmax=1, **kwargs)
+        
+        m_compare = map_obj.new_layer()
+        m_compare.set_data(mask_compared.T, x=comparing_raster.x.values, y=comparing_raster.y.values, crs=self.CRS)
+        m_compare.set_shape.raster()
+        m_compare.plot_map(cmap=cmap_compared, vmin=0, vmax=1, alpha=0.5, **kwargs)
+
+        # add legend for the flood mask
+        if add_legend:
+            cmap_swot = plt.get_cmap(cmap_swot)
+            cmap_compared = plt.get_cmap(cmap_compared)
+            aaxx = map_obj.ax
+            l1 = mpatches.Patch(color=cmap_swot(255), label=swot_legend)
+            l2 = mpatches.Patch(color=cmap_compared(255), label=compared_legend)
+            aaxx.legend(handles=[l1, l2],loc="lower center", bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1)
+
+        if self.save_fig:
+            time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
+            if data['time'].size > 1:
+                time_str = time_str[0]
+            title_str = title if title is not None else f"compare_floodmask_{variable}_{data_area}_{data_type}_{time_str}"
             path = self.PATH_TO_SAVE.joinpath("maps", title_str + ".png")
             m_data.savefig(path, dpi=dpi)
 

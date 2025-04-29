@@ -54,7 +54,7 @@ class Downloader():
         if do_download:
             self.automatic_download()
         else:
-            print('No automatic download, please use the Downloader object to download the data')
+            print('No automatic download, please use the Downloader object to download the data', flush=True)
         
     def __repr__(self):
         """Representation of the Downloader object"""
@@ -71,7 +71,7 @@ class Downloader():
                 text += f"\n\t{key}: {item}"
         return text
     
-    def search_data(self, short_name:str):
+    def search_data(self, short_name:str, only_studied=False):
         """main function to search data from the Earth Engine API
         
         Args:
@@ -83,7 +83,7 @@ class Downloader():
         try:
             earthaccess.login()
         except Exception as e:
-            print('Error: login failed')
+            print('Error: login failed', flush=True)
             raise e
         
         results = earthaccess.search_data(
@@ -91,37 +91,38 @@ class Downloader():
             temporal=(self.first_time, self.last_time),
             bounding_box=self.BBOX.bounds
             )
-        print(f"Found {len(results)} granules")
+        print(f"Found {len(results)} granules", flush=True)
         
         if self.passes is not None:
             for res in results:
                 if res['umm']['SpatialExtent']['HorizontalSpatialDomain']['Track']['Passes'][0]['Pass'] not in self.passes:
                     results.remove(res)
-                    if len(self.studied_time) > 0:
-                        time_res = datetime.strptime(results[0]['umm']['TemporalExtent']['RangeDateTime']['BeginningDateTime'].split('T')[0], "%Y-%m-%d").date()
-                        studied_time = [datetime.strptime(date, "%Y-%m-%d").date() for date in self.studied_time]
-                        if time_res not in studied_time:
-                            results.remove(res)
-            print(f"Found {len(results)} granules within {self.passes} passes")
+                    if only_studied:
+                        if len(self.studied_time) > 0:
+                            time_res = datetime.strptime(results[0]['umm']['TemporalExtent']['RangeDateTime']['BeginningDateTime'].split('T')[0], "%Y-%m-%d").date()
+                            studied_time = [datetime.strptime(date, "%Y-%m-%d").date() for date in self.studied_time]
+                            if time_res not in studied_time:
+                                results.remove(res)
+            print(f"Found {len(results)} granules within {self.passes} passes", flush=True)
         
         self.results = results
     
-    def search_PIXC(self):
+    def search_PIXC(self, only_studied=False):
         """search for SWOT_L2_HR_PIXC_2.0 data
         """
-        self.search_data('SWOT_L2_HR_PIXC_2.0')
+        self.search_data('SWOT_L2_HR_PIXC_2.0', only_studied)
     
-    def search_LakeSP(self):
+    def search_LakeSP(self, only_studied=False):
         """search for SWOT_L2_HR_LakeSP_2.0 data
         """
-        self.search_data('SWOT_L2_HR_LakeSP_2.0')
+        self.search_data('SWOT_L2_HR_LakeSP_2.0', only_studied)
     
-    def search_Nodes(self):
+    def search_Nodes(self, only_studied=False):
         """search for SWOT_L2_HR_Nodes_2.0 data
         """
-        self.search_data('SWOT_L2_HR_Nodes_2.0')
+        self.search_data('SWOT_L2_HR_Nodes_2.0', only_studied)
     
-    def automatic_download(self):
+    def automatic_download(self, only_studied=False):
         """automatic download of the data from the search results
         
         Raises:
@@ -129,11 +130,11 @@ class Downloader():
         """
         match self.download_type:
             case 'PIXC':
-                self.search_PIXC()
+                self.search_PIXC(only_studied)
             case 'LakeSP':
-                self.search_LakeSP()
+                self.search_LakeSP(only_studied)
             case 'Nodes':
-                self.search_Nodes()
+                self.search_Nodes(only_studied)
             case _:
                 raise Exception('Unknown download type')
         self.download_pool()
@@ -151,7 +152,7 @@ class Downloader():
         if not path_file.exists():
             earthaccess.download(item, self.download_path)
         else:
-            print(f"File {item['meta']['native-id']} already exists")
+            print(f"File {item['meta']['native-id']} already exists", flush=True)
             
     def download_pool(self):
         """download all the data from the search results in parallel

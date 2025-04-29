@@ -117,7 +117,7 @@ class Rasterizer():
         """
         list_time = [name.name.split('_')[7] for name in self.SWOT_PATH.glob(f'*PIXC*.nc')]
         if len(list_time) == 0:
-            print(ValueError("No pixc files found, please check the SWOT_PATH of download the data"))
+            print(ValueError("No pixc files found, please check the SWOT_PATH of download the data"), flush=True)
             return
         
         if not studied:
@@ -156,7 +156,7 @@ class Rasterizer():
         if self.list_pixc is None:
             raise ValueError("No pixc files found, please the find_pixc() method")
         
-        print(">>> Converting the SWOT PIXC netcdf to geopackage")
+        print(">>> Converting the SWOT PIXC netcdf to geopackage", flush=True)
         
         # loop over the tiles to make list of pixc per tile
         list_pixc_per_tile = []
@@ -176,7 +176,7 @@ class Rasterizer():
         print(list_pixc_per_tile)        
         # loop over the list of pixc per tile to make on gpkg of selected variables per tile combining all the pixc
         for list_pixc_item in list_pixc_per_tile:
-            print(">>> Working on :")
+            print(">>> Working on :", flush=True)
             SWOT_im_list = []
             for tile in list_pixc_item:
                 print('\t', tile.name)
@@ -186,13 +186,13 @@ class Rasterizer():
                 meta_im = xr.open_dataset(tile)
                 
                 quality_flag = (SWOT_im.interferogram_qual.values == 524288) # Bit value 19 (2^19) => Specular ringing quality flag
-                print("Specular Ringing:", np.unique(quality_flag, return_counts=True))
+                print("Specular Ringing:", np.unique(quality_flag, return_counts=True), flush=True)
                 quality_flag_cl = np.logical_or(SWOT_im.classification.values == 6, SWOT_im.classification.values == 7) # Classification of low coherent pixels
-                print("Low Coherent:", np.unique(quality_flag_cl, return_counts=True))
+                print("Low Coherent:", np.unique(quality_flag_cl, return_counts=True), flush=True)
                 
                 # Discard low coherent pixels with Specular ringing
                 quality_flag = np.where(quality_flag_cl, quality_flag, False)
-                print("Pixel discarded:", np.unique(quality_flag, return_counts=True))
+                print("Pixel discarded:", np.unique(quality_flag, return_counts=True), flush=True)
                 quality_flag = ~ quality_flag
                 
                 darkwater_filter = (SWOT_im.classification.values != 5) # Dark water classification value
@@ -271,7 +271,7 @@ class Rasterizer():
         if len(list_gpkg) == 0:
             raise ValueError("No geopackage files found, please generate them with picx_to_gpkg() method or check the PATH_GPKG")
         
-        print(">>> Converting the SWOT geopackage to tiff")
+        print(">>> Converting the SWOT geopackage to tiff", flush=True)
         
         list_gpkg = [val for val in list_gpkg if val.name.split('_')[-1].split('T')[0] in self.list_time_select]
         list_gpkg.sort()
@@ -279,10 +279,10 @@ class Rasterizer():
 
         print('>>> Generate tiff for every variables')
         for gdf_path in list_gpkg[::-1]:
-            print("Working on ", gdf_path)
+            print("Working on ", gdf_path, flush=True)
             tiff_gpkg = []
             for var in self.variables:
-                print(">>> Generate tiff for ", var)
+                print(">>> Generate tiff for ", var, flush=True)
                 tif_output = str(self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif"))
                 if os.path.exists(tif_output):
                     print(f"\t>>> File {tif_output} already exists, deleting file")
@@ -297,19 +297,19 @@ class Rasterizer():
                 nodata = self.gdal_grid_options.get('nodata', -9999.)
                 cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
                 
-                print(cmd)
+                print(cmd, flush=True)
                 os.system(cmd)
             list_tiff.append(tiff_gpkg)
         
         if self.make_space:
-            print('>>> Removing the geopackage files')
+            print('>>> Removing the geopackage files', flush=True)
             self.remove_gpkg()
         
         list_tiff = list_tiff[::-1]
-        print('>>> Generate combined tiff')
+        print('>>> Generate combined tiff', flush=True)
         for list_var_tiff, gpkg in zip(list_tiff, list_gpkg):
-            print("Working on ", gpkg)
-            print("file to treat:", list_var_tiff)
+            print("Working on ", gpkg, flush=True)
+            print("file to treat:", list_var_tiff, flush=True)
             
             output = str(self.TIFF_PATH.joinpath(f"{gpkg.name.split('.')[0]}_combined.tif"))
             nodata = self.gdal_merge_options.get('nodata', int(-9999))
@@ -318,11 +318,11 @@ class Rasterizer():
             
             cmd = f'gdal_merge.py -v -init "{nodata_str*len(self.variables)}" -ps {self.psx} {self.psy} -pct -o {output} -separate -of GTiff -ot {type_tiff} -n {nodata} {" ".join(list_var_tiff)}'
             
-            print(cmd)
+            print(cmd, flush=True)
             os.system(cmd)
             
         if self.make_space:
-            print('>>> Removing the sub-tiff files')
+            print('>>> Removing the sub-tiff files', flush=True)
             self.remove_tiff()
     
     def remove_gpkg(self):
@@ -354,7 +354,7 @@ class Rasterizer():
             ncol = self.ncol
         if nrow is None:
             nrow = self.nrow
-        print(">>> Converting the AUXILARY rasters to tiff")
+        print(">>> Converting the AUXILARY rasters to tiff", flush=True)
         output = self.AUX_PATH.joinpath(raster.name.split('.')[0] + f"_nrow{int(nrow)}_ncol{int(ncol)}.tif")
         
         if interp is None:
@@ -364,5 +364,5 @@ class Rasterizer():
         
         cmd = f"gdalwarp -s_srs EPSG:{raster_crs} -t_srs EPSG:{self.CRS} -te {self.ulx} {self.uly} {self.lrx} {self.lry} -ts {ncol} {nrow} -r {interp} -of GTiff {raster} {output}"
         
-        print(cmd)
+        print(cmd, flush=True)
         os.system(cmd)
