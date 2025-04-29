@@ -41,8 +41,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2024-03-31",
         title="[a]",
         comparing_raster_Path=Chinon_plot.project.AUX_PATH.joinpath("FM_30TYT_20240331T174856_S1_132_POST_nrow1496_ncol2635.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(2,2,1),
@@ -58,8 +57,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2024-05-06",
         title="[b]",
         comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(2,2,2),
@@ -75,8 +73,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2025-02-20",
         comparing_raster_Path=Ohio_plot.project.AUX_PATH.joinpath("FM_20250222T000000_S1_POST_fusion_cut_32616_nrow3646_ncol6003.tif"),
         title="[c]",
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(2,2,3),
@@ -92,8 +89,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2023-09-15",
         title="[d]",
         comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(2,2,4),
@@ -117,7 +113,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         x=0.284, 
         y=47.1,
         transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
-        fontsize=20,
+        fontsize=25,
         color="red",
         ha='center',
         va='center',
@@ -129,7 +125,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         s="Zoom [a]",
         x=-51.19, 
         y=-29.8,
-        fontsize=16,
+        fontsize=25,
         color="red",
         transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
         **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
@@ -151,7 +147,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         s="Zoom [b]",
         x=-51.24, 
         y=-30,
-        fontsize=16,
+        fontsize=25,
         color="red",
         transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
         **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
@@ -177,7 +173,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         x=21.95, 
         y=39.47,
         color="red",
-        fontsize=16,
+        fontsize=25,
         transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
         **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
     )
@@ -204,17 +200,17 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
     add_arrow_range(ax[2],  "Ohio")
     add_arrow_range(ax[3], "Greece")
     
-    cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
-    l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
-    l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
-    l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
-    l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
-    l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
-    l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
-    l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
-    l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
-    l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
-    ax[-2].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=18, ncols=3, bbox_to_anchor=(0.,-0.25), handlelength=1, handleheight=1)
+    # cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
+    # l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
+    # l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
+    # l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
+    # l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
+    # l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
+    # l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
+    # l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
+    # l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
+    # l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
+    # ax[-2].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=18, ncols=3, bbox_to_anchor=(0.,-0.25), handlelength=1, handleheight=1)
 
     # Save figure
     fig.savefig(
@@ -247,8 +243,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2024-05-06",
         title="Zoom [a]",
         comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(1,3,1),
@@ -264,13 +259,12 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2024-05-06",
         title="Zoom [b]",
         comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(1,3,2),
         fig=fig,
-        extents=[-51.25, -51.1, -30, -29.9] # South Porto Alegre
+        extents=[-51.25, -51.1, -30, -29.85] # South Porto Alegre
         )
 
     ####################
@@ -282,8 +276,7 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         time_selection="2023-09-15",
         title="Zoom [c]",
         comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
-        add_classif_score=True,
-        add_uncertainty=True,
+        add_scores=False,
         add_bkg=False,
         add_legend=False,
         ax=(1,3,3),
@@ -452,7 +445,7 @@ def plot_polygons(plot_obj,ax):
     # polygon_control.plot(ax=ax, color="none", edgecolor="black", linewidth=1)
     polygon_flood.plot(ax=ax, color='blue', alpha=0.5, linewidth=1)     
  
-def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_plot:PlotRaster, EMSR692_plot:PlotRaster):
+def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_plot:PlotRaster, EMSR692_plot:PlotRaster):
     print("-"*30)
     print("Do S1_S2: ", S1_S2)
     print("Do ESA_WC: ", ESA_WC)
@@ -462,6 +455,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
     print("Do WATER_MASK: ", WATER_MASK)
     print("Do ZOOM_MASK: ", ZOOM_MASK)
     print("Do MAPS: ", MAPS)
+    print("Do COMPARE_MASKS: ", COMPARE_MASKS)
+    print("Do SAVE_MASKS: ", SAVE_MASKS)
     
     if variable == "sig0":
         vmin=-20.
@@ -597,7 +592,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
     if ESA_WC:
         start = time()
         print("Plotting ESA World Cover images", flush=True)
-        fig, ax = plt.subplots(2, 2, figsize=(24, 16), dpi=300,
+        fig, ax = plt.subplots(2, 2, figsize=(12, 8), dpi=300,
                             subplot_kw={'projection': (cartopy.crs.PlateCarree())})
         ax[0, 0].remove()
         ax[0, 1].remove()
@@ -680,7 +675,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
     if CLASSIF:
         start = time()
         print("Plotting SWOT classification images", flush=True)
-        fig, ax = plt.subplots(2, 2, figsize=(24, 16), dpi=300,
+        fig, ax = plt.subplots(2, 2, figsize=(12, 8), dpi=300,
                             subplot_kw={'projection': (cartopy.crs.PlateCarree())})
         ax[0, 0].remove()
         ax[0, 1].remove()
@@ -805,10 +800,10 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         print("Plotting histograms", flush=True)
         fig, ax = plt.subplots(4, 3, figsize=(15,10))
 
-        ax[0,0].set_ylabel("Porto Alegre\nRio Grande do Sul\nEMSN 192", fontsize=12, fontweight='bold')
-        ax[1,0].set_ylabel("Farkadona, Greece\nEMSR 692", fontsize=12, fontweight='bold')
-        ax[2,0].set_ylabel("Chinon, France", fontsize=12, fontweight='bold')
-        ax[3,0].set_ylabel("Owensboro, USA\nOhio River", fontsize=12, fontweight='bold')
+        ax[0,0].set_ylabel("Porto Alegre, Brazil\nEMSN 192", fontsize=14, fontweight='bold')
+        ax[1,0].set_ylabel("Farkadona, Greece\nEMSR 692", fontsize=14, fontweight='bold')
+        ax[2,0].set_ylabel("Chinon, France", fontsize=14, fontweight='bold')
+        ax[3,0].set_ylabel("Owensboro, USA\nOhio River", fontsize=14, fontweight='bold')
 
         y_text = 0.95
 
@@ -823,7 +818,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             range_hist=(vmin, vmax),
             use_seaborn=False,
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             title="[a]",
             fig=fig,
             ax=ax[0,0],
@@ -831,8 +826,9 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         )
         ax[0,0].axvline(PA_thresholds["open"], color='red', linestyle=':', label='Threshold')
         ax[0,0].legend(handles=[
-            Line2D([0], [0], color='red', linestyle=':', label='Threshold'),
-            ], fontsize=10)
+            Line2D([0], [0], color='red', linestyle=':', label='Thresholds'),
+            Line2D([0], [0], color='grey', linestyle='--', label='Medians'),
+            ], fontsize=12)
         PortoAlegre_plot.plot_histogram(
             variable=variable,
             data_area="flood",
@@ -843,7 +839,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             use_seaborn=False,
             title="[b]",
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             fig=fig,
             ax=ax[0,1],
             y_text=y_text
@@ -860,7 +856,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             use_seaborn=False,
             title="[c]",
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             fig=fig,
             ax=ax[0,2],
             y_text=y_text,
@@ -934,7 +930,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             range_hist=(vmin, vmax),
             use_seaborn=False,
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             title="[g]",
             fig=fig,
             ax=ax[2,0],
@@ -952,7 +948,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             use_seaborn=False,
             title="[h]",
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             fig=fig,
             ax=ax[2,1],
             y_text=y_text
@@ -971,7 +967,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             range_hist=(vmin, vmax),
             use_seaborn=False,
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             title="[i]",
             fig=fig,
             ax=ax[3,0],
@@ -988,7 +984,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             title="[j]",
             use_seaborn=False,
             add_ylabel=False,
-            add_xlabel=False,
+            add_xlabel=True,
             fig=fig,
             ax=ax[3,1],
             y_text=y_text
@@ -1156,7 +1152,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             x=0.284, 
             y=47.1,
             transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
-            fontsize=20,
+            fontsize=25,
             color="red",
             ha='center',
             va='center',
@@ -1206,8 +1202,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2024-03-31",
             title="[a]",
             comparing_raster_Path=Chinon_plot.project.AUX_PATH.joinpath("FM_30TYT_20240331T174856_S1_132_POST_nrow1496_ncol2635.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(2,2,1),
@@ -1233,8 +1228,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2024-05-06",
             title="[b]",
             comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(2,2,2),
@@ -1260,8 +1254,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2025-02-20",
             comparing_raster_Path=Ohio_plot.project.AUX_PATH.joinpath("FM_20250222T000000_S1_POST_fusion_cut_32616_nrow3646_ncol6003.tif"),
             title="[c]",
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(2,2,3),
@@ -1287,8 +1280,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             title="[d]",
             comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(2,2,4),
@@ -1311,7 +1303,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             x=0.284, 
             y=47.1,
             transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
-            fontsize=20,
+            fontsize=25,
             color="red",
             ha='center',
             va='center',
@@ -1323,7 +1315,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             s="Zoom [a]",
             x=-51.19, 
             y=-29.8,
-            fontsize=16,
+            fontsize=25,
             color="red",
             transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
             **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
@@ -1345,7 +1337,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             s="Zoom [b]",
             x=-51.24, 
             y=-30,
-            fontsize=16,
+            fontsize=25,
             color="red",
             transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
             **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
@@ -1371,7 +1363,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             x=21.95, 
             y=39.47,
             color="red",
-            fontsize=16,
+            fontsize=25,
             transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
             **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
         )
@@ -1398,17 +1390,17 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         add_arrow_range(ax[2],  "Ohio")
         add_arrow_range(ax[3], "Greece")
         
-        cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
-        l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
-        l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
-        l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
-        l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
-        l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
-        l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
-        l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
-        l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
-        l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
-        ax[-2].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=18, ncols=3, bbox_to_anchor=(0.,-0.25), handlelength=1, handleheight=1)
+        # cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
+        # l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
+        # l2 = mpatches.Patch(color=cmap(2), label=color_labels[2])
+        # l3 = mpatches.Patch(color=cmap(3), label=color_labels[3])
+        # l11 = mpatches.Patch(color=cmap(11), label=color_labels[11])
+        # l12 = mpatches.Patch(color=cmap(12), label=color_labels[12])
+        # l13 = mpatches.Patch(color=cmap(13), label=color_labels[13])
+        # l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
+        # l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
+        # l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
+        # ax[-2].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=18, ncols=3, bbox_to_anchor=(0.,-0.25), handlelength=1, handleheight=1)
 
         # Save figure
         fig.savefig(
@@ -1454,8 +1446,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2024-05-06",
             title="Zoom [a]",
             comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(1,3,1),
@@ -1471,15 +1462,14 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2024-05-06",
             title="Zoom [b]",
             comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(1,3,2),
             fig=fig,
-            extents=[-51.25, -51.1, -30, -29.9] # South Porto Alegre
+            extents=[-51.25, -51.1, -30, -29.85] # South Porto Alegre
             )
-
+        
         ####################
         # Greece - Zoom 1
         EMSR692_plot.swot_collection.create_flood_mask(
@@ -1499,8 +1489,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             title="Zoom [c]",
             comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
-            add_classif_score=True,
-            add_uncertainty=True,
+            add_scores=False,
             add_bkg=False,
             add_legend=False,
             ax=(1,3,3),
@@ -1518,7 +1507,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         l21 = mpatches.Patch(color=cmap(21), label=color_labels[21])
         l22 = mpatches.Patch(color=cmap(22), label=color_labels[22])
         l23 = mpatches.Patch(color=cmap(23), label=color_labels[23])
-        ax[-1].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=18, ncols=3, bbox_to_anchor=(-0.1,-0.25), handlelength=1, handleheight=1)
+        ax[-1].legend(handles=[l1, l2, l3, l11, l12, l13, l21, l22, l23],loc="lower left", fontsize=20, ncols=3, bbox_to_anchor=(-0.1,-0.25), handlelength=1, handleheight=1)
 
         # Save figure
         fig.savefig(
@@ -1532,6 +1521,411 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for mask maps zoom", flush=True)
+    ############################################################################################################################
+    #### COMPARE MASKS MAP WITH ZOOM
+    ############################################################################################################################
+    if COMPARE_MASKS:
+        ###################
+        # Chinon
+        Chinon_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Chinon_thresholds,
+            time_selection="2024-03-31",
+            add_uncertainty=True,
+            )
+
+        ####################
+        # Porto Alegre
+        PortoAlegre_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=PA_thresholds,
+            time_selection="2024-05-06",
+            urban_diff=PA_urban_diff,
+            threshold_gamma=PA_threshold_gamma,
+            add_uncertainty=True,
+            )
+
+        ####################
+        # Ohio
+        Ohio_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Ohio_thresholds,
+            time_selection="2025-02-20",
+            add_uncertainty=True,
+            threshold_gamma=Ohio_threshold_gamma,
+            )
+
+        
+        ####################
+        # Greece
+        EMSR692_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Greece_thresholds,
+            time_selection="2023-09-15",
+            add_uncertainty=True,
+            urban_diff=Greece_urban_diff,
+            )
+        
+        print("Plotting water masks comparison", flush=True)
+        start = time()
+        fig, ax = plt.subplots(2, 2, figsize=(25,20))
+        fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
+
+        ax[0,0].remove()
+        ax[0,1].remove()
+        ax[1,0].remove()
+        ax[1,1].remove()
+        
+        ####################
+        # Chinon
+        Chinon_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2024-03-31",
+            title="[a]",
+            comparing_raster_Path=Chinon_plot.project.AUX_PATH.joinpath("FM_30TYT_20240331T174856_S1_132_POST_nrow1496_ncol2635.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,1),
+            fig=fig
+            )
+
+        ####################
+        # Porto Alegre
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="[b]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FLoodML_20240506T133149_cut_32722_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,2),
+            fig=fig
+            )
+
+        ####################
+        # Ohio
+        Ohio_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2025-02-20",
+            comparing_raster_Path=Ohio_plot.project.AUX_PATH.joinpath("FM_20250222T000000_S1_POST_fusion_cut_32616_nrow3646_ncol6003.tif"),
+            title="[c]",
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,3),
+            fig=fig
+            )
+
+        ####################
+        # Greece
+        fig, ax = EMSR692_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2023-09-15",
+            title="[d]",
+            comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
+            add_bkg=False,
+            add_legend=True,
+            ax=(2,2,4),
+            fig=fig
+            )
+
+        ax[0].add_patch(
+            mpatches.Rectangle(
+                xy=(0.28, 47.1),  # lower left corner
+                width=0.03,  # width of rectangle
+                height=0.05,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            )
+        )
+        ax[0].text(
+            s="A",
+            x=0.284, 
+            y=47.1,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            fontsize=25,
+            color="red",
+            ha='center',
+            va='center',
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+            
+        # plot in porto alegre [-51.2, -51.1, -29.8, -29.7] and [-51.25, -51.1, -30, -29.85] rectangle
+        ax[1].text(
+            s="Zoom [a]",
+            x=-51.19, 
+            y=-29.8,
+            fontsize=25,
+            color="red",
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        ax[1].add_patch(
+            mpatches.Rectangle(
+                xy=(-51.2, -29.8),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.1,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            )
+        )
+        ax[1].text(
+            s="Zoom [b]",
+            x=-51.24, 
+            y=-30,
+            fontsize=25,
+            color="red",
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        
+        ax[1].add_patch(
+            mpatches.Rectangle(
+                xy=(-51.25, -30),  # lower left corner
+                width=0.15,  # width of rectangle
+                height=0.15,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            )
+        )
+
+        # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
+        ax[-1].text(
+            s="Zoom [c]",
+            x=21.95, 
+            y=39.47,
+            color="red",
+            fontsize=25,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        ax[-1].add_patch(
+            mpatches.Rectangle(
+                xy=(21.94, 39.47),  # lower left corner
+                width=0.21,  # width of rectangle
+                height=0.12,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
+            )
+        )
+        # Add arrow for Nadir direction
+        # Chinon : East > West
+        # Porto Alegre : West > East
+        # Ohio : East > West
+        # Greece : West > East
+        add_arrow_range(ax[0],  "Chinon")
+        add_arrow_range(ax[1],  "PortoAlegre")
+        add_arrow_range(ax[2],  "Ohio")
+        add_arrow_range(ax[3], "Greece")
+        
+        # Save figure
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile.pdf",
+            dpi=300,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile.png",
+            dpi=300,
+        )
+        
+        plt.close("all")
+        print("Elapsed time: ", round(time() - start, 2), "s for compared mask maps", flush=True)
+        
+        
+        print("Plotting zoom", flush=True)
+        fig, ax = plt.subplots(1, 3, figsize=(30,10))
+        fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
+
+        ax[0].remove()
+        ax[1].remove()
+        ax[2].remove()
+
+        ####################
+        # Porto Alegre - Zoom 1
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable, 
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="Zoom [a]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FLoodML_20240506T133149_cut_32722_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(1,3,1),
+            fig=fig,
+            extents=[-51.2, -51.1, -29.8, -29.7] # North Porto Alegre
+            )
+
+        # Porto Alegre - Zoom 2
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable, 
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="Zoom [b]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FLoodML_20240506T133149_cut_32722_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(1,3,2),
+            fig=fig,
+            extents=[-51.25, -51.1, -30, -29.85] # South Porto Alegre
+            )
+
+        ####################
+        # Greece - Zoom 1
+        fig, ax = EMSR692_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2023-09-15",
+            title="Zoom [c]",
+            comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FM_34SEJ_20230915_CUT_nrow5720_ncol5917.tif"),
+            add_bkg=False,
+            add_legend=True,
+            ax=(1,3,3),
+            fig=fig,
+            extents=[21.94, 22.15, 39.47, 39.59] # Zoom on Metamorfosis village and neighbourhood
+            )
+        
+        # Save figure
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile_zoom.pdf",
+            dpi=300,
+        )
+
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile_zoom.png",
+            dpi=300,
+        )
+        plt.close("all")
+        print("Elapsed time: ", round(time() - start, 2), "s for compared mask maps zoom", flush=True)
+    ############################################################################################################################
+    #### SAVE MASKS
+    ############################################################################################################################
+    if SAVE_MASKS:
+        print("Saving masks", flush=True)
+        ###################
+        # Chinon
+        Chinon_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Chinon_thresholds,
+            time_selection="2024-03-31",
+            add_uncertainty=True,
+            )
+
+        ####################
+        # Porto Alegre
+        PortoAlegre_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=PA_thresholds,
+            time_selection="2024-05-06",
+            urban_diff=PA_urban_diff,
+            threshold_gamma=PA_threshold_gamma,
+            add_uncertainty=True,
+            )
+
+        ####################
+        # Ohio
+        Ohio_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Ohio_thresholds,
+            time_selection="2025-02-20",
+            add_uncertainty=True,
+            threshold_gamma=Ohio_threshold_gamma,
+            )
+
+        
+        ####################
+        # Greece
+        EMSR692_plot.swot_collection.create_flood_mask(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            thresholds=Greece_thresholds,
+            time_selection="2023-09-15",
+            add_uncertainty=True,
+            urban_diff=Greece_urban_diff,
+            )
+        
+        Ohio_plot.swot_collection.save_tiff(
+            variable=variable,
+            is_mask=True,
+            make_binary=False,
+            remove_lowcoh=False,
+            data_area="global",
+            data_type="swot",
+            path=Ohio_plot.project.TIFF_PATH.joinpath('output', f'watermask_{variable}_20250220_epsg{Ohio_plot.project.CRS}.tif'),
+            time_selection="2025-02-20",
+        )
+
+        EMSR692_plot.swot_collection.save_tiff(
+            variable=variable,
+            is_mask=True,
+            make_binary=False,
+            remove_lowcoh=False,
+            data_area="global",
+            data_type="swot",
+            path=EMSR692_plot.project.TIFF_PATH.joinpath('output', f'watermask_{variable}_20230915_epsg{EMSR692_plot.project.CRS}.tif'),
+            time_selection="2023-09-15",
+        )
+
+        PortoAlegre_plot.swot_collection.save_tiff(
+            variable=variable,
+            is_mask=True,
+            make_binary=False,
+            remove_lowcoh=False,
+            data_area="global",
+            data_type="swot",
+            path=PortoAlegre_plot.project.TIFF_PATH.joinpath('output', f'watermask_{variable}_20240506_epsg{PortoAlegre_plot.project.CRS}.tif'),
+            time_selection="2024-05-06",
+        )
+
+        Chinon_plot.swot_collection.save_tiff(
+            variable=variable,
+            is_mask=True,
+            make_binary=False,
+            remove_lowcoh=False,
+            data_area="global",
+            data_type="swot",
+            path=Chinon_plot.project.TIFF_PATH.joinpath('output', f'watermask_{variable}_20240331_epsg{Chinon_plot.project.CRS}.tif'),
+            time_selection="2024-03-31",
+        )
     #########################################################################################################################
     print("Done.")
     print("Total elapsed time: ", round(time() - start000, 2), "s", flush=True)
@@ -1617,24 +2011,28 @@ if __name__ == "__main__":
     WATER_MASK = False
     ZOOM_MASK = False
     MAPS = False
+    COMPARE_MASKS = False
+    SAVE_MASKS = True
     
-    COMBINE = True
-    
-    
-    ##########################################################################
-    # Sigma 0
-    variable = "sig0"
-    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
-    
-    ##########################################################################
-    # Coherent power
-    variable = "coherent_power"
-    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
+    COMBINE = False
     
     ##########################################################################
     # Coherence interferometric
     variable = "gamma_tot"
-    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
+    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
+    
+    CLASSIF = False # Once is enough
+    
+    ##########################################################################
+    # Sigma 0
+    variable = "sig0"
+    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
+    
+    ##########################################################################
+    # Coherent power
+    variable = "coherent_power"
+    main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
+    
     
     ##########################################################################
     # ALL VARIABLES
