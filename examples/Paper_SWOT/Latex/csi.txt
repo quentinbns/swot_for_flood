@@ -1,0 +1,40 @@
+FLOODED Area;   CHINON      ;    SWOT x FM     ;   34.75
+FLOODED Area;   CHINON      ;    SWOT x HM     ;   78.92
+FLOODED Area;   CHINON      ;    SWOT x classif;   86.43
+FLOODED Area;   CHINON      ;    classif x FM  ;   35.55
+FLOODED Area;   CHINON      ;    classif x HM  ;   81.17
+FLOODED Area;   FARKADONA   ;    SWOT x FM     ;   23.44
+FLOODED Area;   FARKADONA   ;    SWOT x HM     ;   49.14
+FLOODED Area;   FARKADONA   ;    SWOT x classif;   74.1 
+FLOODED Area;   FARKADONA   ;    classif x FM  ;   22.25
+FLOODED Area;   FARKADONA   ;    classif x HM  ;   51.93
+FLOODED Area;   OHIO        ;    SWOT x FM     ;   58.5 
+FLOODED Area;   OHIO        ;    SWOT x HM     ;   50.74
+FLOODED Area;   OHIO        ;    SWOT x classif;   74.85
+FLOODED Area;   OHIO        ;    classif x FM  ;   55.91
+FLOODED Area;   OHIO        ;    classif x HM  ;   42.71
+FLOODED Area;   PORTO ALEGRE;    SWOT x FM     ;   40.31
+FLOODED Area;   PORTO ALEGRE;    SWOT x HM     ;   47.15
+FLOODED Area;   PORTO ALEGRE;    SWOT x classif;   44.98
+FLOODED Area;   PORTO ALEGRE;    classif x FM  ;   29.53
+FLOODED Area;   PORTO ALEGRE;    classif x HM  ;   27.56
+GLOBAL  Area;   CHINON      ;    SWOT x FM     ;   27.55
+GLOBAL  Area;   CHINON      ;    SWOT x HM     ;   65.83
+GLOBAL  Area;   CHINON      ;    SWOT x classif;   59.72
+GLOBAL  Area;   CHINON      ;    classif x FM  ;   24.44
+GLOBAL  Area;   CHINON      ;    classif x HM  ;   59.55
+GLOBAL  Area;   FARKADONA   ;    SWOT x FM     ;   7.96 
+GLOBAL  Area;   FARKADONA   ;    SWOT x HM     ;   20.08
+GLOBAL  Area;   FARKADONA   ;    SWOT x classif;   46.71
+GLOBAL  Area;   FARKADONA   ;    classif x FM  ;   9.2 1
+GLOBAL  Area;   FARKADONA   ;    classif x HM  ;   24.44
+GLOBAL  Area;   OHIO        ;    SWOT x FM     ;   44.14
+GLOBAL  Area;   OHIO        ;    SWOT x HM     ;   46.97
+GLOBAL  Area;   OHIO        ;    SWOT x classif;   61.19
+GLOBAL  Area;   OHIO        ;    classif x FM  ;   42.38
+GLOBAL  Area;   OHIO        ;    classif x HM  ;   40.14
+GLOBAL  Area;   PORTO ALEGRE;    SWOT x FM     ;   35.27
+GLOBAL  Area;   PORTO ALEGRE;    SWOT x HM     ;   42.54
+GLOBAL  Area;   PORTO ALEGRE;    SWOT x classif;   38.07
+GLOBAL  Area;   PORTO ALEGRE;    classif x FM  ;   23.57
+GLOBAL  Area;   PORTO ALEGRE;    classif x HM  ;   22.95

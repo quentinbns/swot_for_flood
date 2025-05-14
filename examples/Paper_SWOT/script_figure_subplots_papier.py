@@ -463,10 +463,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         vmax=40.
         cmap="viridis"
         Ohio_thresholds={"urban":-0, "forest":5.5, "open":9.5}
-        Ohio_threshold_gamma = 0.5 
         PA_thresholds={"urban":-0, "forest":5, "open":10}
         PA_urban_diff=False
-        PA_threshold_gamma=0.1 #swot
         Greece_thresholds={"urban":8, "forest":7, "open":9}
         Greece_urban_diff=True
         Chinon_thresholds={"urban":-0, "forest":10, "open":10}
@@ -479,7 +477,6 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         Ohio_threshold_gamma = 0.5
         PA_thresholds={"urban":-0, "forest":62, "open":70}
         PA_urban_diff=False
-        PA_threshold_gamma=0.1 #swot
         Greece_thresholds={"urban":70, "forest":65, "open":65}
         Greece_urban_diff=False
         Chinon_thresholds={"urban":-0, "forest":64, "open":64}
@@ -489,13 +486,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         vmax=1.
         cmap=Colormap("seaborn:mako").to_matplotlib()
         Ohio_thresholds={"urban":-0, "forest":0.7, "open":0.85}
-        Ohio_threshold_gamma=0.2, #swot
         PA_thresholds={"urban":-0.1, "forest":0.65, "open":0.8} # swot with urban diff
         PA_urban_diff=True
-        PA_threshold_gamma=0.5 #swot
-        Greece_thresholds={"urban":0.9, "forest":0.85, "open":0.85}
+        Greece_thresholds={"urban":0.9, "forest":0.85, "open":0.9}
         Greece_urban_diff=False
-        Chinon_thresholds={"urban":-0, "forest":0.75, "open":0.75}
+        Chinon_thresholds={"urban":-0, "forest":0.725, "open":0.725}
         
     print("Variable: ", variable)
     print("plot range: ", vmin, vmax)
@@ -1194,6 +1189,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Chinon_thresholds,
             time_selection="2024-03-31",
             add_uncertainty=True,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             )
         Chinon_plot.plot_map_mask(
             variable=variable,
@@ -1218,8 +1215,9 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=PA_thresholds,
             time_selection="2024-05-06",
             urban_diff=PA_urban_diff,
-            threshold_gamma=PA_threshold_gamma,
             add_uncertainty=True,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             )
         PortoAlegre_plot.plot_map_mask(
             variable=variable, 
@@ -1244,7 +1242,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Ohio_thresholds,
             time_selection="2025-02-20",
             add_uncertainty=True,
-            threshold_gamma=Ohio_threshold_gamma,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             )
             
         Ohio_plot.plot_map_mask(
@@ -1271,6 +1270,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             add_uncertainty=True,
             urban_diff=Greece_urban_diff,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             )
             
         fig, ax = EMSR692_plot.plot_map_mask(
@@ -1436,8 +1437,9 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=PA_thresholds,
             time_selection="2024-05-06",
             urban_diff=PA_urban_diff,
-            threshold_gamma=PA_threshold_gamma,
             add_uncertainty=True,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             )
         PortoAlegre_plot.plot_map_mask(
             variable=variable, 
@@ -1480,6 +1482,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             add_uncertainty=True,
             urban_diff=Greece_urban_diff,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
             
         fig, ax = EMSR692_plot.plot_map_mask(
@@ -1534,6 +1538,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Chinon_thresholds,
             time_selection="2024-03-31",
             add_uncertainty=True,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
 
         ####################
@@ -1545,7 +1551,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=PA_thresholds,
             time_selection="2024-05-06",
             urban_diff=PA_urban_diff,
-            threshold_gamma=PA_threshold_gamma,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             add_uncertainty=True,
             )
 
@@ -1558,7 +1565,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Ohio_thresholds,
             time_selection="2025-02-20",
             add_uncertainty=True,
-            threshold_gamma=Ohio_threshold_gamma,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
 
         
@@ -1572,9 +1580,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             add_uncertainty=True,
             urban_diff=Greece_urban_diff,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
         
-        print("Plotting water masks comparison", flush=True)
+        print("Plotting water masks comparison with FloodML", flush=True)
         start = time()
         fig, ax = plt.subplots(2, 2, figsize=(25,20))
         fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
@@ -1750,11 +1760,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         
         # Save figure
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile.pdf",
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile.pdf",
             dpi=300,
         )
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile.png",
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile.png",
             dpi=300,
         )
         
@@ -1819,12 +1829,270 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         
         # Save figure
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile_zoom.pdf",
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile_zoom.pdf",
             dpi=300,
         )
 
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_maps_{variable}_compile_zoom.png",
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile_zoom.png",
+            dpi=300,
+        )
+        plt.close("all")
+        
+        
+        print("Plotting water masks comparison with Handmade floodmask", flush=True)
+        start = time()
+        fig, ax = plt.subplots(2, 2, figsize=(25,20))
+        fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
+
+        ax[0,0].remove()
+        ax[0,1].remove()
+        ax[1,0].remove()
+        ax[1,1].remove()
+        
+        ####################
+        # Chinon
+        Chinon_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2024-03-31",
+            title="[a]",
+            comparing_raster_Path=Chinon_plot.project.AUX_PATH.joinpath("FloodMask_nrow1496_ncol2635.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,1),
+            fig=fig
+            )
+
+        ####################
+        # Porto Alegre
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="[b]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,2),
+            fig=fig
+            )
+
+        ####################
+        # Ohio
+        Ohio_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2025-02-20",
+            comparing_raster_Path=Ohio_plot.project.AUX_PATH.joinpath("FloodMask_v2_nrow3646_ncol6003.tif"),
+            title="[c]",
+            add_bkg=False,
+            add_legend=False,
+            ax=(2,2,3),
+            fig=fig
+            )
+
+        ####################
+        # Greece
+        fig, ax = EMSR692_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2023-09-15",
+            title="[d]",
+            comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FloodMask_nrow5720_ncol5917.tif"),
+            compared_legend="Handmade Flood extent",
+            add_bkg=False,
+            add_legend=True,
+            ax=(2,2,4),
+            fig=fig
+            )
+
+        ax[0].add_patch(
+            mpatches.Rectangle(
+                xy=(0.28, 47.1),  # lower left corner
+                width=0.03,  # width of rectangle
+                height=0.05,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            )
+        )
+        ax[0].text(
+            s="A",
+            x=0.284, 
+            y=47.1,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            fontsize=25,
+            color="red",
+            ha='center',
+            va='center',
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+            
+        # plot in porto alegre [-51.2, -51.1, -29.8, -29.7] and [-51.25, -51.1, -30, -29.85] rectangle
+        ax[1].text(
+            s="Zoom [a]",
+            x=-51.19, 
+            y=-29.8,
+            fontsize=25,
+            color="red",
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        ax[1].add_patch(
+            mpatches.Rectangle(
+                xy=(-51.2, -29.8),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.1,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            )
+        )
+        ax[1].text(
+            s="Zoom [b]",
+            x=-51.24, 
+            y=-30,
+            fontsize=25,
+            color="red",
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        
+        ax[1].add_patch(
+            mpatches.Rectangle(
+                xy=(-51.25, -30),  # lower left corner
+                width=0.15,  # width of rectangle
+                height=0.15,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[1]),
+            )
+        )
+
+        # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
+        ax[-1].text(
+            s="Zoom [c]",
+            x=21.95, 
+            y=39.47,
+            color="red",
+            fontsize=25,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        ax[-1].add_patch(
+            mpatches.Rectangle(
+                xy=(21.94, 39.47),  # lower left corner
+                width=0.21,  # width of rectangle
+                height=0.12,  # height of rectangle
+                linewidth=2,
+                color="red",
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[-1]),
+            )
+        )
+        # Add arrow for Nadir direction
+        # Chinon : East > West
+        # Porto Alegre : West > East
+        # Ohio : East > West
+        # Greece : West > East
+        add_arrow_range(ax[0],  "Chinon")
+        add_arrow_range(ax[1],  "PortoAlegre")
+        add_arrow_range(ax[2],  "Ohio")
+        add_arrow_range(ax[3], "Greece")
+        
+        # Save figure
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile.pdf",
+            dpi=300,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile.png",
+            dpi=300,
+        )
+        
+        plt.close("all")
+        print("Elapsed time: ", round(time() - start, 2), "s for compared mask maps", flush=True)
+        
+        
+        print("Plotting zoom", flush=True)
+        fig, ax = plt.subplots(1, 3, figsize=(30,10))
+        fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
+
+        ax[0].remove()
+        ax[1].remove()
+        ax[2].remove()
+
+        ####################
+        # Porto Alegre - Zoom 1
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable, 
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="Zoom [a]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(1,3,1),
+            fig=fig,
+            extents=[-51.2, -51.1, -29.8, -29.7] # North Porto Alegre
+            )
+
+        # Porto Alegre - Zoom 2
+        PortoAlegre_plot.plot_map_compare_masks(
+            variable=variable, 
+            data_area="global", #global or flood or control
+            data_type="swot", #swot
+            time_selection="2024-05-06",
+            title="Zoom [b]",
+            comparing_raster_Path=PortoAlegre_plot.project.AUX_PATH.joinpath("FloodMask_nrow4248_ncol8052.tif"),
+            add_bkg=False,
+            add_legend=False,
+            ax=(1,3,2),
+            fig=fig,
+            extents=[-51.25, -51.1, -30, -29.85] # South Porto Alegre
+            )
+
+        ####################
+        # Greece - Zoom 1
+        fig, ax = EMSR692_plot.plot_map_compare_masks(
+            variable=variable,
+            data_area="global",
+            data_type="swot",
+            time_selection="2023-09-15",
+            title="Zoom [c]",
+            comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FloodMask_nrow5720_ncol5917.tif"),
+            add_bkg=False,
+            add_legend=True,
+            compared_legend="Handmade Flood extent",
+            ax=(1,3,3),
+            fig=fig,
+            extents=[21.94, 22.15, 39.47, 39.59] # Zoom on Metamorfosis village and neighbourhood
+            )
+        
+        # Save figure
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile_zoom.pdf",
+            dpi=300,
+        )
+
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile_zoom.png",
             dpi=300,
         )
         plt.close("all")
@@ -1843,6 +2111,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Chinon_thresholds,
             time_selection="2024-03-31",
             add_uncertainty=True,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
 
         ####################
@@ -1854,7 +2124,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=PA_thresholds,
             time_selection="2024-05-06",
             urban_diff=PA_urban_diff,
-            threshold_gamma=PA_threshold_gamma,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5,
             add_uncertainty=True,
             )
 
@@ -1867,7 +2138,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             thresholds=Ohio_thresholds,
             time_selection="2025-02-20",
             add_uncertainty=True,
-            threshold_gamma=Ohio_threshold_gamma,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
 
         
@@ -1881,6 +2153,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             add_uncertainty=True,
             urban_diff=Greece_urban_diff,
+            threshold_gamma=0.5,
+            threshold_SNR=0.5
             )
         
         Ohio_plot.swot_collection.save_tiff(
@@ -2011,8 +2285,8 @@ if __name__ == "__main__":
     WATER_MASK = False
     ZOOM_MASK = False
     MAPS = False
-    COMPARE_MASKS = False
-    SAVE_MASKS = True
+    COMPARE_MASKS = True
+    SAVE_MASKS = False
     
     COMBINE = False
     
@@ -2042,33 +2316,27 @@ if __name__ == "__main__":
             for variable in ["sig0", "coherent_power", "gamma_tot"]:
                 if variable == "sig0":
                     Ohio_thresholds={"urban":-0, "forest":5.5, "open":9.5}
-                    Ohio_threshold_gamma = 0.5 
                     PA_thresholds={"urban":-0, "forest":5, "open":10}
                     PA_urban_diff=False
-                    PA_threshold_gamma=0.1 #swot
                     Greece_thresholds={"urban":8, "forest":7, "open":9}
                     Greece_urban_diff=True
                     Chinon_thresholds={"urban":-0, "forest":10, "open":10}
                     
                 elif variable == "coherent_power":
                     Ohio_thresholds={"urban":-0, "forest":62.5, "open":65}
-                    Ohio_threshold_gamma = 0.5
                     PA_thresholds={"urban":-0, "forest":62, "open":70}
                     PA_urban_diff=False
-                    PA_threshold_gamma=0.1 #swot
                     Greece_thresholds={"urban":70, "forest":65, "open":65}
                     Greece_urban_diff=False
                     Chinon_thresholds={"urban":-0, "forest":64, "open":64}
                     
                 elif variable == "gamma_tot":
                     Ohio_thresholds={"urban":-0, "forest":0.7, "open":0.85}
-                    Ohio_threshold_gamma=0.2, #swot
                     PA_thresholds={"urban":-0.1, "forest":0.65, "open":0.8} # swot with urban diff
                     PA_urban_diff=True
-                    PA_threshold_gamma=0.5 #swot
-                    Greece_thresholds={"urban":0.9, "forest":0.85, "open":0.85}
+                    Greece_thresholds={"urban":0.9, "forest":0.85, "open":0.9}
                     Greece_urban_diff=False
-                    Chinon_thresholds={"urban":-0, "forest":0.75, "open":0.75}
+                    Chinon_thresholds={"urban":-0, "forest":0.725, "open":0.725}
                     
                 ###################
                 # Chinon
@@ -2079,6 +2347,8 @@ if __name__ == "__main__":
                     thresholds=Chinon_thresholds,
                     time_selection="2024-03-31",
                     add_uncertainty=True,
+                    threshold_gamma=0.5,
+                    threshold_SNR=0.5
                     )
 
                 ####################
@@ -2089,9 +2359,10 @@ if __name__ == "__main__":
                     data_type="swot",
                     thresholds=PA_thresholds,
                     time_selection="2024-05-06",
-                    urban_diff=PA_urban_diff,
-                    threshold_gamma=PA_threshold_gamma,
                     add_uncertainty=True,
+                    threshold_gamma=0.5,
+                    threshold_SNR=0.5,
+                    urban_diff=PA_urban_diff,
                     )
 
                 ####################
@@ -2103,7 +2374,8 @@ if __name__ == "__main__":
                     thresholds=Ohio_thresholds,
                     time_selection="2025-02-20",
                     add_uncertainty=True,
-                    threshold_gamma=Ohio_threshold_gamma,
+                    threshold_gamma=0.5,
+                    threshold_SNR=0.5,
                     )
 
                 ####################
@@ -2115,6 +2387,8 @@ if __name__ == "__main__":
                     thresholds=Greece_thresholds,
                     time_selection="2023-09-15",
                     add_uncertainty=True,
+                    threshold_gamma=0.5,
+                    threshold_SNR=0.5,
                     urban_diff=Greece_urban_diff,
                     )
         plot_combine_mask(

@@ -921,17 +921,29 @@ class SwotCollection():
         """
         if variable not in self.variables:
             raise ValueError(f"Variable {variable} not in the list of variables")
+        is_diff = data_type == "diff"
+        if is_diff and (variable == "sig0" or variable == "coherent_power"):
+            data_type = "swot"
         match data_area:
             case 'global':
                 data = self.__select_global_types(variable, data_type, world_cover_selection).copy()
+                if variable == "sig0" or variable == "coherent_power":
+                    mean = self.__select_global_types(variable, "mean", world_cover_selection).copy()
             case 'control':
                 data = self.__select_control_types(variable, data_type, world_cover_selection).copy()
+                if variable == "sig0" or variable == "coherent_power":
+                    mean = self.__select_global_types(variable, "mean", world_cover_selection).copy()
             case 'flood':
                 data = self.__select_flood_types(variable, data_type, world_cover_selection).copy()
+                if variable == "sig0" or variable == "coherent_power":
+                    mean = self.__select_global_types(variable, "mean", world_cover_selection).copy()
             case _:
                 raise ValueError(f"Data area {data_area} not in the list of areas")
         if variable == "sig0" or variable == "coherent_power":
-            data = power_to_db(data)
+            if is_diff:
+                data = power_to_db(data) - power_to_db(mean)
+            else:
+                data = power_to_db(data)
         return data
                 
     def open_rasters(self):
@@ -1151,16 +1163,16 @@ class SwotCollection():
                 data_flood_forest = data_flood_forest.isel(time=0)
                 data_flood_open = data_flood_open.isel(time=0)
 
-        if data_type == "diff":
-            from skimage.filters import gaussian
-            # smooth data with gaussian filter
-            gaussian_urban = gaussian(data_urban.values, sigma=1)
-            gaussian_forest = gaussian(data_forest.values, sigma=1)
-            gaussian_open = gaussian(data_open.values, sigma=1)
+        # if data_type == "diff":
+        #     from skimage.filters import gaussian
+        #     # smooth data with gaussian filter
+        #     gaussian_urban = gaussian(data_urban.values, sigma=1)
+        #     gaussian_forest = gaussian(data_forest.values, sigma=1)
+        #     gaussian_open = gaussian(data_open.values, sigma=1)
             
-            data_urban.values = gaussian_urban
-            data_forest.values = gaussian_forest
-            data_open.values = gaussian_open
+        #     data_urban.values = gaussian_urban
+        #     data_forest.values = gaussian_forest
+        #     data_open.values = gaussian_open
             
         if data_type == "swot" and not urban_diff:
             thresholds_apply = abs(thresholds['urban'])

@@ -1449,7 +1449,7 @@ class PlotRaster():
             m_data.text(0.01, 0.02, f"F1-score[classification, current mask]: {f1_score_classification:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
             if comparing_raster_Path is not None:
                 m_data.text(0.01, 0.07, f"F1-score[FloodML, current mask]: {f1_score_compared:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
-            m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
+                m_data.text(0.01, 0.12, f"F1-score[FloodML, classification]: {f1_score_classif_compared:.2f}", color='black', ha='left', va='center', transform=m_data.ax.transAxes, **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]})
 
         # add legend for the flood mask
         if add_legend:
