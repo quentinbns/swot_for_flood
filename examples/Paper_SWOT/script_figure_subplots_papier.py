@@ -167,6 +167,55 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
         )
     )
 
+    # Plot wet-snow rectangle in Ohio
+    ax[2].text(
+            s="B",
+            x=-87.015, 
+            y=37.97,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            fontsize=25,
+            color="purple",
+            ha='center',
+            va='center',
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+    ax[2].add_patch(
+        mpatches.Rectangle(
+            xy=(-87.01, 37.97),  # lower left corner
+            width=0.055,  # width of rectangle
+            height=0.08,  # height of rectangle
+            linewidth=2,
+            linestyle='--',
+            edgecolor="purple",
+            fill=False,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+        )
+    )
+
+    ax[2].text(
+            s="B'",
+            x=-86.915, 
+            y=37.82,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            fontsize=25,
+            color="purple",
+            ha='center',
+            va='center',
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+    ax[2].add_patch(
+        mpatches.Rectangle(
+            xy=(-86.92, 37.82),  # lower left corner
+            width=0.1,  # width of rectangle
+            height=0.06,  # height of rectangle
+            linewidth=2,
+            linestyle='--',
+            edgecolor="purple",
+            fill=False,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+        )
+    )
+    
     # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
     ax[-1].text(
         s="Zoom [c]",
@@ -786,7 +835,176 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             dpi=300,
         )
         plt.close("all")
-        print("Elapsed time: ", round(time() - start, 2), "s for mean images", flush=True)
+        print("Elapsed time: ", round(time() - start, 2), "s for mean histo", flush=True)
+        start = time()
+        
+        fig, ax = plt.subplots(2 , 2, figsize=(25,20))
+
+        ax[0,0].remove()
+        ax[0,1].remove()
+        ax[1,0].remove()
+        ax[1,1].remove()
+
+        ####################
+        # Chinon
+        Chinon_plot.plot_map(
+            variable=variable,
+            data_area="global",
+            data_type="mean",
+            world_cover_selection=None,
+            time_selection="2024-03-31",
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            add_bkg=False,
+            title="[a]",
+            ax=(2,2,1),
+            fig=fig
+            )
+
+        ####################
+        # Porto Alegre
+        PortoAlegre_plot.plot_map(
+            variable=variable,
+            data_area="global",
+            data_type="mean",
+            world_cover_selection=None,
+            time_selection="2024-05-06",
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            add_bkg=False,
+            title="[b]",
+            ax=(2,2,2),
+            fig=fig
+        )
+
+        ####################
+        # Ohio
+        Ohio_plot.plot_map(
+            variable=variable,
+            data_area="global",
+            data_type="mean",
+            world_cover_selection=None,
+            time_selection="2025-02-20",
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            add_bkg=False,
+            title="[c]",
+            ax=(2,2,3),
+            fig=fig
+        )
+
+        ####################
+        # Greece
+        fig, ax = EMSR692_plot.plot_map(
+            variable=variable,
+            data_area="global",
+            data_type="mean",
+            world_cover_selection=None,
+            time_selection="2023-09-15",
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            add_bkg=False,
+            title="[d]",
+            ax=(2,2,4),
+            fig=fig
+        )
+
+        # Add arrow for Nadir direction
+        # Chinon : East > West
+        # Porto Alegre : West > East
+        # Ohio : East > West
+        # Greece : West > East
+        add_arrow_range(ax[0],  "Chinon")
+        add_arrow_range(ax[4],  "PortoAlegre")
+        add_arrow_range(ax[8],  "Ohio")
+        add_arrow_range(ax[12], "Greece")
+        
+        ax[0].add_patch(
+            mpatches.Rectangle(
+                xy=(0.28, 47.1),  # lower left corner
+                width=0.03,  # width of rectangle
+                height=0.05,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="red",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            )
+        )
+        ax[0].text(
+            s="A",
+            x=0.284, 
+            y=47.1,
+            transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[0]),
+            fontsize=25,
+            color="red",
+            ha='center',
+            va='center',
+            **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+        )
+        # Plot wet-snow rectangle in Ohio
+        ax[8].text(
+                s="B",
+                x=-87.015, 
+                y=37.97,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[8].add_patch(
+            mpatches.Rectangle(
+                xy=(-87.01, 37.97),  # lower left corner
+                width=0.055,  # width of rectangle
+                height=0.08,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+            )
+        )
+
+        ax[8].text(
+                s="B'",
+                x=-86.915, 
+                y=37.82,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[8].add_patch(
+            mpatches.Rectangle(
+                xy=(-86.92, 37.82),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.06,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+            )
+        )
+        
+        # Save figure
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.pdf",
+            dpi=300,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.png",
+            dpi=300,
+        )
+        print("Elapsed time: ", round(time() - start, 2), "s for mean maps", flush=True)
     #########################################################################################################################
     #### HISTOGRAMS
     #########################################################################################################################
@@ -1153,6 +1371,55 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             va='center',
             **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
         )
+        # Plot wet-snow rectangle in Ohio
+        ax[8].text(
+                s="B",
+                x=-87.015, 
+                y=37.97,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[8].add_patch(
+            mpatches.Rectangle(
+                xy=(-87.01, 37.97),  # lower left corner
+                width=0.055,  # width of rectangle
+                height=0.08,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+            )
+        )
+
+        ax[8].text(
+                s="B'",
+                x=-86.915, 
+                y=37.82,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[8].add_patch(
+            mpatches.Rectangle(
+                xy=(-86.92, 37.82),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.06,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[8]),
+            )
+        )
+        
 
         # Save figure
         fig.savefig(
@@ -1358,6 +1625,55 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             )
         )
 
+        # Plot wet-snow rectangle in Ohio
+        ax[2].text(
+                s="B",
+                x=-87.015, 
+                y=37.97,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-87.01, 37.97),  # lower left corner
+                width=0.055,  # width of rectangle
+                height=0.08,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
+
+        ax[2].text(
+                s="B'",
+                x=-86.915, 
+                y=37.82,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-86.92, 37.82),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.06,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
+        
         # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
         ax[-1].text(
             s="Zoom [c]",
@@ -1725,6 +2041,54 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             )
         )
 
+        # Plot wet-snow rectangle in Ohio
+        ax[2].text(
+                s="B",
+                x=-87.015, 
+                y=37.97,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-87.01, 37.97),  # lower left corner
+                width=0.055,  # width of rectangle
+                height=0.08,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
+
+        ax[2].text(
+                s="B'",
+                x=-86.915, 
+                y=37.82,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-86.92, 37.82),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.06,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
         # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
         ax[-1].text(
             s="Zoom [c]",
@@ -1982,6 +2346,55 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             )
         )
 
+        # Plot wet-snow rectangle in Ohio
+        ax[2].text(
+                s="B",
+                x=-87.015, 
+                y=37.97,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-87.01, 37.97),  # lower left corner
+                width=0.055,  # width of rectangle
+                height=0.08,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
+
+        ax[2].text(
+                s="B'",
+                x=-86.915, 
+                y=37.82,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+                fontsize=25,
+                color="purple",
+                ha='center',
+                va='center',
+                **{'path_effects': [patheffects.withStroke(linewidth=3, foreground='w')]}
+            )
+        ax[2].add_patch(
+            mpatches.Rectangle(
+                xy=(-86.92, 37.82),  # lower left corner
+                width=0.1,  # width of rectangle
+                height=0.06,  # height of rectangle
+                linewidth=2,
+                linestyle='--',
+                edgecolor="purple",
+                fill=False,
+                transform=cartopy.crs.PlateCarree()._as_mpl_transform(ax[2]),
+            )
+        )
+    
         # plot in greece [21.94, 22.15, 39.47, 39.59] rectangle
         ax[-1].text(
             s="Zoom [c]",
@@ -2280,21 +2693,20 @@ if __name__ == "__main__":
     S1_S2 = False
     ESA_WC = False
     CLASSIF = False
-    MEAN = False
+    MEAN = True
     HISTO = False
-    WATER_MASK = False
+    WATER_MASK = True
     ZOOM_MASK = False
-    MAPS = False
+    MAPS = True
     COMPARE_MASKS = True
     SAVE_MASKS = False
     
-    COMBINE = False
+    COMBINE = True
     
     ##########################################################################
     # Coherence interferometric
     variable = "gamma_tot"
     main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot, PortoAlegre_plot, Ohio_plot, EMSR692_plot)
-    
     CLASSIF = False # Once is enough
     
     ##########################################################################
