@@ -38,17 +38,17 @@ echo '------------------------------------'
 echo "Running pretreat.py for all datasets..."
 echo '------------------------------------'
 
-# echo '------------------------------------'
-# echo ">>> Running for Chinon..."
-# python3 ./Chinon/pretreat.py
+echo '------------------------------------'
+echo ">>> Running for Chinon..."
+python3 ./Chinon/pretreat.py
 
 echo '------------------------------------'
 echo ">>> Running for Ohio..."
 python3 ./Ohio/pretreat.py
 
-# echo '------------------------------------'
-# echo ">>> Running for Porto Alegre..."
-# python3 ./PortoAlegre/pretreat.py
+echo '------------------------------------'
+echo ">>> Running for Porto Alegre..."
+python3 ./PortoAlegre/pretreat.py
 
 echo '------------------------------------'
 echo ">>> Running for Porto EMSR_692..."

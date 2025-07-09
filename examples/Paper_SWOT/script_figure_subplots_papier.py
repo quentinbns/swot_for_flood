@@ -4,17 +4,28 @@ import geopandas as gpd
 import configparser
 from pathlib import Path
 from matplotlib import pyplot as plt
-import seaborn as sns
-from cmap import Colormap
-
-from core.swot_project import SwotProject
-from core.plot_raster import PlotRaster
-import cartopy
 from matplotlib import patches as mpatches
 from matplotlib.lines import Line2D
 from matplotlib import patheffects
+import cartopy
+import seaborn as sns
+from cmap import Colormap
 
 from time import time
+
+# Import custom modules
+from core.swot_project import SwotProject
+from core.plot_raster import PlotRaster
+from auxiliary.cbar_ESA_WC import defined_ESAWC_cmap
+from auxiliary.cbar_SWOT import defined_SWOT_cmap
+
+MAX_WIDTH = 2244 # In pixels
+
+DPI_25 = MAX_WIDTH / 25
+DPI_30 = MAX_WIDTH / 30
+DPI_12 = MAX_WIDTH / 12
+DPI_15 = MAX_WIDTH / 15
+
 
 def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_plot:PlotRaster, EMSR692_plot:PlotRaster):
     start = time()
@@ -244,10 +255,10 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
     # Porto Alegre : West > East
     # Ohio : East > West
     # Greece : West > East
-    add_arrow_range(ax[0],  "Chinon")
-    add_arrow_range(ax[1],  "PortoAlegre")
-    add_arrow_range(ax[2],  "Ohio")
-    add_arrow_range(ax[3], "Greece")
+    add_arrow_range(ax[0],  "Chinon", mask=True)
+    add_arrow_range(ax[1],  "PortoAlegre", mask=True)
+    add_arrow_range(ax[2],  "Ohio", mask=True)
+    add_arrow_range(ax[3], "Greece", mask=True)
     
     # cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
     # l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
@@ -264,11 +275,11 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
     # Save figure
     fig.savefig(
         f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/merged_mask_maps_compile.pdf",
-        dpi=300,
+        dpi=DPI_25,
     )
     fig.savefig(
         f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/merged_mask_maps_compile.png",
-        dpi=300,
+        dpi=DPI_25,
     )
     
     plt.close("all")
@@ -348,18 +359,19 @@ def plot_combine_mask(Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_
     # Save figure
     fig.savefig(
         f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/merged_mask_maps_compile_zoom.pdf",
-        dpi=300,
+        dpi=DPI_30,
     )
 
     fig.savefig(
         f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/merged_mask_maps_compile_zoom.png",
-        dpi=300,
+        dpi=DPI_30,
     )
     plt.close("all")
     print("Elapsed time: ", round(time() - start, 2), "s for mask maps zoom", flush=True)
 
-def add_arrow_range(ax, test_case):
+def add_arrow_range(ax, test_case, mask=False):
     match test_case:
+
         case "Greece":
             ax.annotate(
                 "",
@@ -372,9 +384,13 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Near Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            if mask:
+                ax.annotate("Near Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            else:
+                ax.annotate("Near Range", xy=(0.1, 1.13), xytext=(0.1, 1.13), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
             ax.annotate(
                 "",
@@ -387,11 +403,15 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Far Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            if mask:
+                ax.annotate("Far Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            else:
+                ax.annotate("Far Range", xy=(1.1, -.1), xytext=(1.1, -.1), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
-        case "Ohio":
+        case "Chinon" | "Ohio":
             ax.annotate(
                 "",
                 xy=(0.95, -0.1),  # position of the text
@@ -403,9 +423,13 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Near Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            if mask:
+                ax.annotate("Near Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            else:
+                ax.annotate("Near Range", xy=(1.1, -.1), xytext=(1.1, -.1), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
             ax.annotate(
                 "",
@@ -418,40 +442,10 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Far Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
-
-        case "Chinon":
-            ax.annotate(
-                "",
-                xy=(0.95, -0.1),  # position of the text
-                xytext=(0.85, -.07),  # position of the arrow
-                size=20,
-                xycoords="axes fraction",
-                textcoords="axes fraction",
-                arrowprops=dict(
-                    arrowstyle="->",
-                    color="black",
-                    lw=2,
-                )   
-            )
-            ax.annotate("Near Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
-
-            ax.annotate(
-                "",
-                xy=(0.05, 1.1),  # position of the arrow
-                xytext=(0.15, 1.07),  # position of the text
-                size=20,
-                xycoords="axes fraction",
-                textcoords="axes fraction",
-                arrowprops=dict(
-                    arrowstyle="->",
-                    color="black",
-                    lw=2,
-                )   
-            )
-            ax.annotate("Far Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            ax.annotate("Far Range", xy=(0.1, 1.15), xytext=(0.1, 1.15), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
         case "PortoAlegre":
             ax.annotate(
@@ -465,9 +459,13 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Near Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            if mask:
+                ax.annotate("Far Range", xy=(0.1, 1.02), xytext=(0.1, 1.02), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            else:
+                ax.annotate("Near Range", xy=(0.1, 1.15), xytext=(0.1, 1.15), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
             ax.annotate(
                 "",
@@ -480,9 +478,13 @@ def add_arrow_range(ax, test_case):
                     arrowstyle="->",
                     color="black",
                     lw=2,
-                )   
+                ),
+                zorder=9999  # Ensure the arrow is on top
             )
-            ax.annotate("Far Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            if mask:
+                ax.annotate("Far Range", xy=(0.9, -.04), xytext=(0.9, -.04), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center")
+            else:
+                ax.annotate("Far Range", xy=(1.1, -.1), xytext=(1.1, -.1), xycoords="axes fraction", textcoords="axes fraction", fontsize=20, ha="center", va="center", zorder=9999)
 
 def plot_polygons(plot_obj,ax):
     # polygon_control = plot_obj.swot_collection.controlmask
@@ -492,8 +494,8 @@ def plot_polygons(plot_obj,ax):
     polygon_flood = polygon_flood.to_crs(4326)
     # plot the polygons
     # polygon_control.plot(ax=ax, color="none", edgecolor="black", linewidth=1)
-    polygon_flood.plot(ax=ax, color='blue', alpha=0.5, linewidth=1)     
- 
+    polygon_flood.plot(ax=ax, color='blue', alpha=0.5, linewidth=1)
+    
 def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, MAPS, COMPARE_MASKS, SAVE_MASKS, Chinon_plot:PlotRaster, PortoAlegre_plot:PlotRaster, Ohio_plot:PlotRaster, EMSR692_plot:PlotRaster):
     print("-"*30)
     print("Do S1_S2: ", S1_S2)
@@ -620,12 +622,12 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
 
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/S1_S2_compile.pdf",
-            dpi=300,
+            dpi=DPI_12,
             bbox_inches='tight'
         )
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/S1_S2_compile.png",
-            dpi=300,
+            dpi=DPI_12,
             bbox_inches='tight'
         )
         plt.close("all")
@@ -705,11 +707,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
 
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/ESA_WC_compile.pdf",
-            dpi=300,
+            dpi=DPI_12,
         )
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/ESA_WC_compile.png",
-            dpi=300,
+            dpi=DPI_12,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for ESA World Cover images", flush=True)
@@ -777,11 +779,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
 
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/SWOT_classification_compile.pdf",
-            dpi=300,
+            dpi=DPI_12,
         )
         fig.savefig(
             "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/SWOT_classification_compile.png",
-            dpi=300,
+            dpi=DPI_12,
         )
         print("Elapsed time: ", round(time() - start, 2), "s for SWOT classification", flush=True)
     ########################################################################################################################
@@ -828,11 +830,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         fig.tight_layout()
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mean_computation_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_15,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mean_computation_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_15,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for mean histo", flush=True)
@@ -998,11 +1000,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_25,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_25,
         )
         print("Elapsed time: ", round(time() - start, 2), "s for mean maps", flush=True)
     #########################################################################################################################
@@ -1032,7 +1034,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             use_seaborn=False,
             add_ylabel=False,
             add_xlabel=True,
-            title="[a]",
+            title="Open areas\n[a]",
             fig=fig,
             ax=ax[0,0],
             y_text=y_text
@@ -1050,7 +1052,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection='2024-05-06',
             range_hist=(vmin, vmax),
             use_seaborn=False,
-            title="[b]",
+            title="Forest areas\n[b]",
             add_ylabel=False,
             add_xlabel=True,
             fig=fig,
@@ -1067,7 +1069,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection='2024-05-06',
             range_hist=(vmin, vmax),
             use_seaborn=False,
-            title="[c]",
+            title="Urban areas\n[c]",
             add_ylabel=False,
             add_xlabel=True,
             fig=fig,
@@ -1241,11 +1243,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         fig.tight_layout()
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_15,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_15,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for histograms", flush=True)
@@ -1424,11 +1426,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_25,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_25,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for variable maps", flush=True)
@@ -1702,10 +1704,10 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Porto Alegre : West > East
         # Ohio : East > West
         # Greece : West > East
-        add_arrow_range(ax[0],  "Chinon")
-        add_arrow_range(ax[1],  "PortoAlegre")
-        add_arrow_range(ax[2],  "Ohio")
-        add_arrow_range(ax[3], "Greece")
+        add_arrow_range(ax[0],  "Chinon", mask=True)
+        add_arrow_range(ax[1],  "PortoAlegre", mask=True)
+        add_arrow_range(ax[2],  "Ohio", mask=True)
+        add_arrow_range(ax[3], "Greece", mask=True)
         
         # cmap, color_labels = EMSR692_plot.get_floodmask_colormap(True)
         # l1 = mpatches.Patch(color=cmap(1), label=color_labels[1])
@@ -1722,11 +1724,11 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mask_{variable}_maps_compile.pdf",
-            dpi=300,
+            dpi=DPI_25,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mask_{variable}_maps_compile.png",
-            dpi=300,
+            dpi=DPI_25,
         )
         
         plt.close("all")
@@ -1832,12 +1834,12 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mask_maps_{variable}_compile_zoom.pdf",
-            dpi=300,
+            dpi=DPI_30,
         )
 
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/mask_maps_{variable}_compile_zoom.png",
-            dpi=300,
+            dpi=DPI_30,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for mask maps zoom", flush=True)
@@ -2117,19 +2119,19 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Porto Alegre : West > East
         # Ohio : East > West
         # Greece : West > East
-        add_arrow_range(ax[0],  "Chinon")
-        add_arrow_range(ax[1],  "PortoAlegre")
-        add_arrow_range(ax[2],  "Ohio")
-        add_arrow_range(ax[3], "Greece")
+        add_arrow_range(ax[0],  "Chinon", mask=True)
+        add_arrow_range(ax[1],  "PortoAlegre", mask=True)
+        add_arrow_range(ax[2],  "Ohio", mask=True)
+        add_arrow_range(ax[3], "Greece", mask=True)
         
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_25,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_25,
         )
         
         plt.close("all")
@@ -2137,7 +2139,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         
         
         print("Plotting zoom", flush=True)
-        fig, ax = plt.subplots(1, 3, figsize=(30,10))
+        fig, ax = plt.subplots(1, 3, figsize=(30,10), dpi=300)
         fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
 
         ax[0].remove()
@@ -2194,19 +2196,19 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile_zoom.pdf",
-            dpi=300,
+            dpi=DPI_30,
         )
 
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_FloodML_maps_{variable}_compile_zoom.png",
-            dpi=300,
+            dpi=DPI_30,
         )
         plt.close("all")
         
         
         print("Plotting water masks comparison with Handmade floodmask", flush=True)
         start = time()
-        fig, ax = plt.subplots(2, 2, figsize=(25,20))
+        fig, ax = plt.subplots(2, 2, figsize=(25,20), dpi=300)
         fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
 
         ax[0,0].remove()
@@ -2268,7 +2270,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             time_selection="2023-09-15",
             title="[d]",
             comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FloodMask_nrow5720_ncol5917.tif"),
-            compared_legend="Handmade Flood extent",
+            compared_legend="Manually-delineated mask",
             add_bkg=False,
             add_legend=True,
             ax=(2,2,4),
@@ -2423,19 +2425,19 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Porto Alegre : West > East
         # Ohio : East > West
         # Greece : West > East
-        add_arrow_range(ax[0],  "Chinon")
-        add_arrow_range(ax[1],  "PortoAlegre")
-        add_arrow_range(ax[2],  "Ohio")
-        add_arrow_range(ax[3], "Greece")
+        add_arrow_range(ax[0],  "Chinon", mask=True)
+        add_arrow_range(ax[1],  "PortoAlegre", mask=True)
+        add_arrow_range(ax[2],  "Ohio", mask=True)
+        add_arrow_range(ax[3], "Greece", mask=True)
         
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile.pdf",
-            dpi=300,
+            dpi=DPI_25,
         )
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile.png",
-            dpi=300,
+            dpi=DPI_25,
         )
         
         plt.close("all")
@@ -2443,7 +2445,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         
         
         print("Plotting zoom", flush=True)
-        fig, ax = plt.subplots(1, 3, figsize=(30,10))
+        fig, ax = plt.subplots(1, 3, figsize=(30,10), dpi=300)
         fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, hspace=0.1, wspace=0.1)
 
         ax[0].remove()
@@ -2492,7 +2494,7 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             comparing_raster_Path=EMSR692_plot.project.AUX_PATH.joinpath("FloodMask_nrow5720_ncol5917.tif"),
             add_bkg=False,
             add_legend=True,
-            compared_legend="Handmade Flood extent",
+            compared_legend="Manually-delineated mask",
             ax=(1,3,3),
             fig=fig,
             extents=[21.94, 22.15, 39.47, 39.59] # Zoom on Metamorfosis village and neighbourhood
@@ -2501,12 +2503,12 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         # Save figure
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile_zoom.pdf",
-            dpi=300,
+            dpi=DPI_30,
         )
 
         fig.savefig(
             f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/compared_mask_handmade_maps_{variable}_compile_zoom.png",
-            dpi=300,
+            dpi=DPI_30,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for compared mask maps zoom", flush=True)
@@ -2618,6 +2620,8 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
     print("Total elapsed time: ", round(time() - start000, 2), "s", flush=True)
     
 if __name__ == "__main__":
+    # print("Using DPI: ", DPI_25, DPI_30, DPI_12, DPI_15, flush=True)
+
     # Define projects
     Ohio_config = configparser.ConfigParser()
     Ohio_path = "/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Ohio"
@@ -2693,15 +2697,15 @@ if __name__ == "__main__":
     S1_S2 = False
     ESA_WC = False
     CLASSIF = False
-    MEAN = True
+    MEAN = False
     HISTO = False
-    WATER_MASK = True
+    WATER_MASK = False
     ZOOM_MASK = False
-    MAPS = True
+    MAPS = False
     COMPARE_MASKS = True
     SAVE_MASKS = False
     
-    COMBINE = True
+    COMBINE = False
     
     ##########################################################################
     # Coherence interferometric
