@@ -315,7 +315,12 @@ class PlotRaster():
         dpi:int=300,
         add_bkg:bool=False,
         add_cbar:bool=True,
+        add_legend:bool=False,
         constraint_range:Tuple[float, float]=None,
+        add_classification_mask=False,
+        with_cloud_legend=True,
+        classification_time_selection:str=None,
+        aux_label="manually-delineated mask"
     ) -> Tuple[plt.Figure, plt.Axes]:
         """ Plot the auxiliary data
         
@@ -333,7 +338,11 @@ class PlotRaster():
             dpi (int): The dpi of the plot to save. Default is 300.
             add_bkg (bool): Add a background map (OpenStreetMap). Default is False.
             add_cbar (bool): Add a colorbar. Default is True.
+            add_legend (bool): Add a legend to the plot. Default is False.
             constraint_range (Tuple[float, float]): The range of the data for RGB image. Default is None.
+            add_classification_mask (bool): Add the classification mask to the plot. Default is False.
+            classification_time_selection (str): The time selection for the classification mask. Default is None.
+            aux_label (str): The label for the auxiliary data. Default is "manually-delineated mask".
         Returns:
             Tuple[plt.Figure, plt.Axes]: The figure and axes of the plot
         """
@@ -375,7 +384,7 @@ class PlotRaster():
             trfm = data.transform
             
         if make_mask:
-            grey = np.where(np.logical_or(data.values == 6, data.values == 7), 0.5, 0) #FloodML cloud index
+            grey = np.where(np.logical_or(data.values == 6, data.values == 7), 0.5, np.nan) #FloodML cloud index
             data.values = np.where(data.values == mask_value, 1, grey)
             
             
@@ -425,10 +434,48 @@ class PlotRaster():
             data = np.array([data.read(i) for i in range(1, data.count + 1)])
             if constraint_range is not None:
                 data = np.clip(data, constraint_range[0], constraint_range[1])
-                
             show(data, ax=m_data.ax, transform=trfm, adjust=True, vmin=vmin, vmax=vmax)
+        
+        if add_classification_mask:
+            
+            classif_data = self.swot_collection.get_variable("classification", "global", "swot", None).copy()
+            if classification_time_selection is not None:
+                classif_data = classif_data.sel(time=classification_time_selection)
+            if classif_data['time'].size > 1:
+                print(f"Warning: {classif_data['time'].size} time steps selected. Only the first one will be used.")
+            classif_data = classif_data.isel(time=0)
+            # selection classif == 3 - 4 - 5
+            mask_classif = np.logical_and(classif_data.values >= 3, classif_data.values <= 5)
+            mask_classif = np.where(mask_classif, 1., np.nan)
+            
+            classif_data.values = mask_classif
+            m_classif = map_obj.new_layer()
+            m_classif.set_data(classif_data, x="x", y="y", crs=self.CRS, parameter='Classification mask')
+            m_classif.set_shape.raster()
+            m_classif.plot_map(cmap='cividis', vmin=0, vmax=1, alpha=0.5)
+            
+            if add_legend:
+                cividis = Colormap('cividis').to_matplotlib()
+                cmap = Colormap(cmap).to_matplotlib() 
+                
+                if with_cloud_legend:
+                    ll = [
+                            mpatches.Patch(color=cividis(255), label='SWOT Built-in Classif.', alpha=0.5), 
+                            mpatches.Patch(color=cmap(int(255/2)), label='Cloud'),
+                            mpatches.Patch(color=cmap(255), label=aux_label)
+                            ]
+                else:    
+                    ll = [
+                            mpatches.Patch(color=cividis(255), label='SWOT Built-in Classif.', alpha=0.5), 
+                            mpatches.Patch(color=cmap(255), label=aux_label)
+                        ]
+                
+                aaxx = map_obj.ax
+                aaxx.legend(handles=ll, loc="upper right", handlelength=1, handleheight=1)
+            
             
         if add_cbar and not is_multiband:
+            
             if not is_worldcover:
                 m_data.add_colorbar(label=data.name, hist_size=0, shrink=0.5, pad=0.05, vmin=vmin, vmax=vmax)
             else:
@@ -1250,7 +1297,7 @@ class PlotRaster():
             no_range = True
             hist_range = (data_mean.values.min(), data_mean.values.max())
         
-        ax.hist(data_mean.values.flatten(), bins=bins, color="grey", alpha=0.5, histtype='stepfilled', label="Mean data", range=hist_range)
+        ax.hist(data_mean.values.flatten(), bins=bins, color="grey", alpha=0.5, histtype='stepfilled', label="Dry mean raster", range=hist_range)
         
         for i in range(data_dates['time'].size):
             data = data_dates.isel(time=i)
@@ -1625,7 +1672,7 @@ class PlotRaster():
             aaxx = map_obj.ax
             l1 = mpatches.Patch(color=cmap_swot(255), label=swot_legend)
             l2 = mpatches.Patch(color=cmap_compared(255), label=compared_legend)
-            aaxx.legend(handles=[l1, l2],loc="lower center", bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1)
+            aaxx.legend(handles=[l1, l2],loc="lower center", bbox_to_anchor=(0.5, -0.2), handlelength=1, handleheight=1, fontsize=16)
 
         if self.save_fig:
             time_str = data['time'].dt.strftime("%Y%m%dT%H%M%S").values
