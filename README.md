@@ -8,7 +8,7 @@ Python package for Surface Water and Ocean Topography (SWOT) data processing for
 
 
 This package is associated with the paper: 
-- A comprehensive study of Surface Water and Ocean Topography Pixel Cloud data for flood extent extraction, In Prep. 2025, Q. Bonassies, C. Fatras, S. Pena-Luque, P. Dubois, A. Piacentini, L. Cassan, S. Ricci, T.-H. Nguyen.
+- Q. Bonassies, C. Fatras, S. Pena-Luque, P. Dubois, A. Piacentini, L. Cassan, S. Ricci, T.-H. Nguyen (In Prep. 2025). A comprehensive study of Surface Water and Ocean Topography Pixel Cloud data for flood extent extraction.
 
 The graphical abstract is shown below:
 ![[graphical_abstract.jpg]](graphical_abstract.jpg)
