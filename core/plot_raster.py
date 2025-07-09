@@ -67,8 +67,6 @@ class PlotRaster():
             (self.PATH_TO_SAVE / "maps").mkdir()
         if not (self.PATH_TO_SAVE / "histograms").exists():
             (self.PATH_TO_SAVE / "histograms").mkdir()
-        if not (self.PATH_TO_SAVE / "scatter").exists():
-            (self.PATH_TO_SAVE / "scatter").mkdir()
     
     @staticmethod
     def get_label(variable:str)->str:
