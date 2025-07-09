@@ -14,7 +14,7 @@ The graphical abstract is shown below:
 ![[graphical_abstract.jpg]](graphical_abstract.jpg)
 The subplots are generated with this library.
 
-The data used in the paper is available on Zenodo:
+The data used in the paper is available on Zenodo: 10.5281/zenodo.15848842
 
 
 ## Dependencies
