@@ -193,6 +193,13 @@ class Rasterizer():
                 # Discard low coherent pixels with Specular ringing
                 quality_flag = np.where(quality_flag_cl, quality_flag, False)
                 print("Pixel discarded:", np.unique(quality_flag, return_counts=True), flush=True)
+                
+                # Discard bright land pixels
+                quality_flag_bl = (SWOT_im.bright_land_flag.values == 1) # Bright land flag
+                
+                quality_flag = np.where(quality_flag_bl, quality_flag, False)
+                print("Bright Land Pixels discarded:", np.unique(quality_flag, return_counts=True), flush=True)
+                
                 quality_flag = ~ quality_flag
                 
                 darkwater_filter = (SWOT_im.classification.values != 5) # Dark water classification value
@@ -264,7 +271,7 @@ class Rasterizer():
             
             SWOT_combined.to_file(self.PATH_GPKG.joinpath(f"SWOT_epsg{self.CRS}_{tile.name.split('_')[7]}.gpkg"), driver='GPKG')
     
-    def gpkg_to_tiff(self) -> None:
+    def gpkg_to_tiff(self, power=2, smoothing=1, radius=50, max_points=20, nodata=-9999) -> None:
         """Rasterize the SWOT data into tiff files
         """
         list_gpkg = list(self.PATH_GPKG.glob('*.gpkg'))
@@ -290,12 +297,15 @@ class Rasterizer():
                 tiff_gpkg.append(tif_output)
                 # GDAL Grid algorithm that perform IDW interpolation
                 # clip the output to the polygon of poly_cut.gpkg, fid = 1 using -clipsrcwhere -clipsrc and -clipsrclayer option
-                power = self.gdal_grid_options.get('power', 2.)
-                smoothing = self.gdal_grid_options.get('smoothing', 1.)
-                radius = self.gdal_grid_options.get('radius', 50.)
-                max_points = self.gdal_grid_options.get('max_points', 20.)
-                nodata = self.gdal_grid_options.get('nodata', -9999.)
-                cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
+                power = self.gdal_grid_options.get('power', power)
+                smoothing = self.gdal_grid_options.get('smoothing', smoothing)
+                radius = self.gdal_grid_options.get('radius', radius)
+                max_points = self.gdal_grid_options.get('max_points', max_points)
+                nodata = self.gdal_grid_options.get('nodata', nodata)
+                if var != "classification" or var != "bright_land_flag":
+                    cmd = f"gdal_grid -a invdistnn:power={power}:smoothing={smoothing}:radius={radius}:max_points={max_points}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Float32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
+                else:
+                    cmd = f"gdal_grid -a nearest:radius={radius}:nodata={nodata} -txe {self.ulx} {self.lrx} -tye {self.lry} {self.uly} -outsize {self.ncol} {self.nrow} -zfield {var} -of GTiff -ot Int32 {gdf_path} {tif_output} --config GDAL_NUM_THREADS {int(self.GDAL_NUM_THREADS)} --config GDAL_CACHEMAX {int(self.GDAL_CACHEMAX)}"
                 
                 print(cmd, flush=True)
                 os.system(cmd)

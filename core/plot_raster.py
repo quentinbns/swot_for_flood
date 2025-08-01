@@ -40,6 +40,16 @@ plt.rcParams.update({
     'figure.titlesize': 20,
     }
 )
+# plt.rcParams.update({
+#     'font.size': 20,
+#     'axes.titlesize': 40,
+#     'axes.labelsize': 20,
+#     'xtick.labelsize': 20,
+#     'ytick.labelsize': 20,
+#     'legend.fontsize': 20,
+#     'figure.titlesize': 40,
+#     }
+# )
 
 class PlotRaster():
     """ Uses the SWOT_RASTER, SWOT_COLLECTION or SWOT_MEAN classes as input data to plot the raster data """
@@ -1121,7 +1131,7 @@ class PlotRaster():
 
         if self.save_fig:
             try:
-                time_str = self.swot_collection.get_variable(variable, data_area, data_type, None)['time'].dt.strftime("%Y%m%dT%H%M%S").values
+                time_str = self.swot_collection.get_variable(variable, data_area, data_type, None).sel(time=time_selection)['time'].dt.strftime("%Y%m%dT%H%M%S").values
                 time_str = time_str.tolist()[0]
             except:
                 time_str = "mean"
@@ -1384,13 +1394,16 @@ class PlotRaster():
         if variable not in self.swot_collection.variables and variable != "merged":
             raise ValueError(f"The variable {variable} is not in the collection")
 
-        label_data = self.get_label(variable) if variable != "merged" else "Merged flood mask"
-        holes_mask = self.swot_collection.get_holes_mask(data_area, data_type)
-        holes_mask = holes_mask.isel(time=0)
-        
-        data = self.swot_collection.get_floodmask_from_variable(variable, data_type, data_area)
+        data = self.swot_collection.get_floodmask_from_variable(variable, data_type, data_area).copy()
         if data is None:
             raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
+        
+        label_data = self.get_label(variable) if variable != "merged" else "Merged flood mask"
+        holes_mask = self.swot_collection.get_holes_mask(data_area, data_type)
+        holes_mask = holes_mask.sel(time=time_selection)
+        if holes_mask['time'].size > 1:
+            print(f"Warning: {holes_mask['time'].size} time steps selected. Only the first one will be used.")
+        holes_mask = holes_mask.isel(time=0).values
         
         # get flood cmap and labels
         cmap, color_labels = self.get_floodmask_colormap(True)

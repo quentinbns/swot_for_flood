@@ -97,20 +97,33 @@ class Downloader():
             for res in results:
                 if res['umm']['SpatialExtent']['HorizontalSpatialDomain']['Track']['Passes'][0]['Pass'] not in self.passes:
                     results.remove(res)
-                    if only_studied:
-                        if len(self.studied_time) > 0:
-                            time_res = datetime.strptime(results[0]['umm']['TemporalExtent']['RangeDateTime']['BeginningDateTime'].split('T')[0], "%Y-%m-%d").date()
-                            studied_time = [datetime.strptime(date, "%Y-%m-%d").date() for date in self.studied_time]
-                            if time_res not in studied_time:
-                                results.remove(res)
             print(f"Found {len(results)} granules within {self.passes} passes", flush=True)
+        if only_studied:
+            tmp_results = []
+            if len(self.studied_time) > 0:
+                for res in results:
+                    time_res = datetime.strptime(res['umm']['TemporalExtent']['RangeDateTime']['BeginningDateTime'].split('T')[0], "%Y-%m-%d").date()
+                    studied_time = [datetime.strptime(date, "%Y-%m-%d").date() for date in self.studied_time]
+                    if (time_res in studied_time):
+                        tmp_results.append(res)
+                        # print(f"Removing {time_res} from results", flush=True)
+                    # else:
+                    #     print(f"Keeping {time_res} in results", flush=True)
+                results = tmp_results.copy()
+            print(f"Found {len(results)} granules within only studied dates", flush=True)
         
         self.results = results
     
     def search_PIXC(self, only_studied=False):
         """search for SWOT_L2_HR_PIXC_2.0 data
         """
+        # self.search_data('SWOT_L2_HR_PIXC_D', only_studied)
         self.search_data('SWOT_L2_HR_PIXC_2.0', only_studied)
+        
+    def search_PIXCVec(self, only_studied=False):
+        """search for SWOT_L2_HR_PIXCVec_2.0 data
+        """
+        self.search_data('SWOT_L2_HR_PIXCVec_2.0', only_studied)
     
     def search_LakeSP(self, only_studied=False):
         """search for SWOT_L2_HR_LakeSP_2.0 data
@@ -118,9 +131,14 @@ class Downloader():
         self.search_data('SWOT_L2_HR_LakeSP_2.0', only_studied)
     
     def search_Nodes(self, only_studied=False):
-        """search for SWOT_L2_HR_Nodes_2.0 data
+        """search for SWOT_L2_HR_RiverSP_node_2.0 data
         """
-        self.search_data('SWOT_L2_HR_Nodes_2.0', only_studied)
+        self.search_data('SWOT_L2_HR_RiverSP_node_2.0', only_studied)
+    
+    def search_Reachs(self, only_studied=False):
+        """search for SWOT_L2_HR_RiverSP_reach_2.0 data
+        """
+        self.search_data('SWOT_L2_HR_RiverSP_reach_2.0', only_studied)
     
     def automatic_download(self, only_studied=False):
         """automatic download of the data from the search results
@@ -147,7 +165,7 @@ class Downloader():
         """
         if 'PIXC' in item['meta']['native-id']:
             path_file = self.download_path.joinpath(item['meta']['native-id'] +".nc")
-        if 'LakeSP' in item['meta']['native-id'] or "Nodes" in item['meta']['native-id']:
+        if 'LakeSP' in item['meta']['native-id'] or "RiverSP" in item['meta']['native-id']:
             path_file = self.download_path.joinpath(item['meta']['native-id'] +".zip")
         if not path_file.exists():
             earthaccess.download(item, self.download_path)

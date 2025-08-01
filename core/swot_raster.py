@@ -78,9 +78,15 @@ class SwotRaster():
     
     def pretreat_raster(self):
         """ Pretreat the raster data by putting nodata values to nan and 0 values """
-        self.MASK_HOLES = np.logical_or(self.SWOT_RASTER[self.variables[0]] == -9999, self.SWOT_RASTER[self.variables[0]] == 0)
+        self.MASK_HOLES = xr.DataArray(
+            np.zeros(self.SWOT_RASTER[self.variables[0]].shape, dtype=bool),
+            coords=self.SWOT_RASTER[self.variables[0]].coords,
+            dims=self.SWOT_RASTER[self.variables[0]].dims
+        )
+        self.MASK_HOLES.values = np.logical_or(self.SWOT_RASTER[self.variables[0]] == -9999, self.SWOT_RASTER[self.variables[0]] == 0)
         self.SWOT_RASTER = self.SWOT_RASTER.where(self.SWOT_RASTER != -9999)
         self.SWOT_RASTER = self.SWOT_RASTER.where(self.SWOT_RASTER != 0)
+        
         
     def normalize_raster(self, data, size):
         """ Normalize the raster data by using the majority filter """
@@ -109,7 +115,10 @@ class SwotRaster():
         self.pretreat_raster()
         
         # add time as a dimension
-        self.SWOT_RASTER = self.SWOT_RASTER.expand_dims(time=[self.time])
+        if "time" not in self.SWOT_RASTER.dims:
+            self.SWOT_RASTER = self.SWOT_RASTER.expand_dims(time=[self.time])
+        if "time" not in self.MASK_HOLES.dims:
+            self.MASK_HOLES = self.MASK_HOLES.expand_dims(time=[self.time])
            
     def clip_swot_raster(self):
         """ Clip the SWOT raster data to the AOI """
@@ -168,10 +177,10 @@ class SwotRaster():
             bool: True if the dimensions are the same, False otherwise
         """
         if data1.sizes["x"] != data2.sizes["x"]:
-            print(f"Dimension x of data1: {data1.sizes['x']} and dimension x of data2: {data2.sizes['x']}")
+            print(f"Dimension x of data1: {data1.sizes['x']} and dimension x of data2: {data2.sizes['x']}", flush=True)
             return False
         if data1.sizes["y"] != data2.sizes["y"]:
-            print(f"Dimension y of data1: {data1.sizes['y']} and dimension y of data2: {data2.sizes['y']}")
+            print(f"Dimension y of data1: {data1.sizes['y']} and dimension y of data2: {data2.sizes['y']}", flush=True)
             return False
         return True
     
@@ -182,10 +191,12 @@ class SwotRaster():
         condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
         condition_permanent_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permanent_water"]
         condition_open = np.logical_and(~ condition_forest,
-            np.logical_and(
-                ~ condition_urban,
-                ~ condition_permanent_water)
-            )
+                ~ condition_urban)
+            # 21/07/2024 - Making masks for DA test on Chinon
+            # np.logical_and(
+            #     ~ condition_urban,
+            #     ~ condition_permanent_water)
+            # )
         SWOT_urban = xr.apply_ufunc(ufunc_where, SWOT_array, condition_urban, dask='parallelized')
         SWOT_forest = xr.apply_ufunc(ufunc_where, SWOT_array, condition_forest, dask='parallelized')
         SWOT_open = xr.apply_ufunc(ufunc_where, SWOT_array, condition_open, dask='parallelized')
@@ -274,7 +285,7 @@ class SwotMean():
             "raster_crs": self.raster_crs,
         }
         for ii, swot_raster_path in enumerate(self.swot_paths):
-            print(f"Opening SWOT raster at time: {self.swot_dates[ii]}")
+            print(f"Opening SWOT raster at time: {self.swot_dates[ii]}", flush=True)
             dict_swot_param["path_to_swot_raster"] = swot_raster_path
             self.swot_rasters[ii] = SwotRaster(**dict_swot_param)
             self.swot_rasters[ii].read_raster()
@@ -883,18 +894,22 @@ class SwotCollection():
             raise ValueError("Path is not a Path object")
         if not path.parent.exists():
             raise ValueError(f"Path {path} does not exist")
+        nan_mask = self.get_holes_mask(data_area, data_type)
+        nan_mask = nan_mask.sel(time=time_selection)
+        
+        nan_mask = nan_mask.isel(time=0) 
         if is_mask:
             data = self.get_floodmask_from_variable(variable, data_type, data_area)
+            
             if make_binary:
                 if remove_lowcoh:
                     condition = np.logical_and(data.values != 0, data.values < 10) * 1.
                 else:
                     condition = np.logical_and(data.values != 0, data.values < 20) * 1.
                 data.values = np.where(condition, 1, 0)
+                
         else:
             data = self.get_variable(variable, data_area, data_type, world_cover_selection)
-        
-        data.values = np.where(data.values == np.nan, -9999, data.values)
         
         if data is None:
             raise ValueError(f"Data is None")
@@ -903,7 +918,9 @@ class SwotCollection():
             if "time" in data.dims:
                 data = data.sel(time=time_selection)
             else:
-                print("Time selection is not possible with this variable")
+                print("Time selection is not possible with this variable", flush=True)
+        data.values = np.where(nan_mask.values, -9999, data.values)
+        data.values = np.where(data.values == np.nan, -9999, data.values)
                 
         data.rio.to_raster(path, driver="GTiff", nodata=-9999, dtype="float32")
     
@@ -958,7 +975,7 @@ class SwotCollection():
             "raster_crs": self.raster_crs,
         }
         for ii, swot_raster_path in enumerate(self.swot_flood_paths):
-            print(f"Opening SWOT raster at time: {self.swot_flood_dates[ii]}")
+            print(f"Opening SWOT raster at time: {self.swot_flood_dates[ii]}", flush=True)
             dict_swot_param["path_to_swot_raster"] = swot_raster_path
             self.swot_flood_rasters[ii] = SwotRaster(**dict_swot_param)
             self.swot_flood_rasters[ii].read_raster()
@@ -1117,7 +1134,6 @@ class SwotCollection():
         else:
             data_open = self.get_variable(variable, data_area, data_type, 'open')
         data_glob = self.get_variable(variable, data_area, data_type, None)
-
 
         if add_uncertainty:
             data_SNR_urban =  self.get_variable("gamma_SNR", data_area, "swot", 'urban')
@@ -1371,7 +1387,7 @@ class SwotCollection():
             )
         
         if np.count_nonzero(~np.isnan(mask_compared)) != np.count_nonzero(~np.isnan(mask_data)):
-            print("WARNING: The compared raster and the SWOT Raster data have not the same non-nan number of pixels")
+            print("WARNING: The compared raster and the SWOT Raster data have not the same non-nan number of pixels", flush=True)
         
         # compute TP, FP, TN, FN
         true = mask_compared
@@ -1389,7 +1405,7 @@ class SwotCollection():
         FN_scale = np.nansum(contingency_map == 3)
         total = TP_scale + FP_scale + TN_scale + FN_scale
         if total != (~np.isnan(true)).flatten().sum():
-            print("WARNING: The sum of TP, FP, TN and FN is not equal to the number of non-nan pixels in the compared raster data")
+            print("WARNING: The sum of TP, FP, TN and FN is not equal to the number of non-nan pixels in the compared raster data", flush=True)
             
             
         # compute precision and recall

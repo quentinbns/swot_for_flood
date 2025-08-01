@@ -170,6 +170,7 @@ class SwotProject():
             download_path=self.SWOT_PATH,
             first_time=self.first_time,
             last_time=self.last_time,
+            studied_time=self.list_dry_dates +  self.list_flood_dates,
             AOI=self.AOI,
             do_download=do_download,
             download_type=download_type,
