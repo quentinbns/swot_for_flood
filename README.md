@@ -8,7 +8,7 @@ Python package for Surface Water and Ocean Topography (SWOT) data processing for
 
 
 This package is associated with the paper: 
-- Q. Bonassies, C. Fatras, S. Pena-Luque, P. Dubois, A. Piacentini, L. Cassan, S. Ricci, T.-H. Nguyen (preprint, 2025). A comprehensive study of Surface Water and Ocean Topography Pixel Cloud data for flood extent extraction. https://dx.doi.org/10.2139/ssrn.5355221
+- Q. Bonassies, C. Fatras, S. Pena-Luque, P. Dubois, A. Piacentini, L. Cassan, S. Ricci, T.-H. Nguyen (2026). A comprehensive study of Surface Water and Ocean Topography Pixel Cloud data for flood extent extraction. https://doi.org/10.1016/j.rse.2025.115101 
 
 The graphical abstract is shown below:
 ![[graphical_abstract.jpg]](graphical_abstract.jpg)
