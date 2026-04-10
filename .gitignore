@@ -175,6 +175,8 @@ cython_debug/
 
 # project stuff
 rasters
+rasters_old
+rasters*
 gpkg_combined
 data
 aux_data
