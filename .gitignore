@@ -178,12 +178,14 @@ rasters
 rasters_old
 rasters*
 gpkg_combined
+gpkg_combined*
 data
 aux_data
 old
 S2A
 Figs
 plots
+plots*
 *.err
 *.out
 *.qml
