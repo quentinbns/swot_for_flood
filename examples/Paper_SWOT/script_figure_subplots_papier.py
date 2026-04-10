@@ -998,13 +998,36 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         )
         
         # Save figure
+        dpi = 2244/12
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.pdf",
-            dpi=DPI_25,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_300dpi.pdf",
+            dpi=dpi,
         )
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile.png",
-            dpi=DPI_25,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_300dpi.png",
+            dpi=dpi,
+        )
+
+        # Save figure
+        dpi = 3740/12
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_500dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_500dpi.png",
+            dpi=dpi,
+        )
+        
+        # Save figure
+        dpi = 7480/12
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_1000dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_mean_{variable}_compile_1000dpi.png",
+            dpi=dpi,
         )
         print("Elapsed time: ", round(time() - start, 2), "s for mean maps", flush=True)
     #########################################################################################################################
@@ -1015,10 +1038,10 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         print("Plotting histograms", flush=True)
         fig, ax = plt.subplots(4, 3, figsize=(15,10))
 
-        ax[0,0].set_ylabel("Porto Alegre, Brazil\nEMSN 192", fontsize=14, fontweight='bold')
-        ax[1,0].set_ylabel("Farkadona, Greece\nEMSR 692", fontsize=14, fontweight='bold')
+        ax[0,0].set_ylabel("Porto Alegre, Brazil", fontsize=14, fontweight='bold')
+        ax[1,0].set_ylabel("Farkadona, Greece", fontsize=14, fontweight='bold')
         ax[2,0].set_ylabel("Chinon, France", fontsize=14, fontweight='bold')
-        ax[3,0].set_ylabel("Owensboro, USA\nOhio River", fontsize=14, fontweight='bold')
+        ax[3,0].set_ylabel("Owensboro, USA", fontsize=14, fontweight='bold')
 
         y_text = 0.95
 
@@ -1241,13 +1264,32 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
         
         # Save figure
         fig.tight_layout()
+        dpi = 2244/15
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile.pdf",
-            dpi=DPI_15,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_300dpi.pdf",
+            dpi=dpi,
         )
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile.png",
-            dpi=DPI_15,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_300dpi.png",
+            dpi=dpi,
+        )
+        dpi = 3740/15
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_500dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_500dpi.png",
+            dpi=dpi,
+        )
+        dpi = 7480/15
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_1000dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/histo_{variable}_compile_1000dpi.png",
+            dpi=dpi,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for histograms", flush=True)
@@ -1422,15 +1464,37 @@ def main(variable, S1_S2, ESA_WC, CLASSIF, MEAN, HISTO, WATER_MASK, ZOOM_MASK, M
             )
         )
         
-
         # Save figure
+        dpi = 2244/12
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile.pdf",
-            dpi=DPI_25,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_300dpi.pdf",
+            dpi=dpi,
         )
         fig.savefig(
-            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile.png",
-            dpi=DPI_25,
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_300dpi.png",
+            dpi=dpi,
+        )
+
+        # Save figure
+        dpi = 3740/12
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_500dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_500dpi.png",
+            dpi=dpi,
+        )
+        
+        # Save figure
+        dpi = 7480/12
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_1000dpi.pdf",
+            dpi=dpi,
+        )
+        fig.savefig(
+            f"/data/scratch/globc/bonassies/workspace/swot_for_flood/examples/Paper_SWOT/Figs/maps_{variable}_compile_1000dpi.png",
+            dpi=dpi,
         )
         plt.close("all")
         print("Elapsed time: ", round(time() - start, 2), "s for variable maps", flush=True)
@@ -2698,11 +2762,11 @@ if __name__ == "__main__":
     ESA_WC = False
     CLASSIF = False
     MEAN = False
-    HISTO = False
+    HISTO = True
     WATER_MASK = False
     ZOOM_MASK = False
     MAPS = False
-    COMPARE_MASKS = True
+    COMPARE_MASKS = False
     SAVE_MASKS = False
     
     COMBINE = False
