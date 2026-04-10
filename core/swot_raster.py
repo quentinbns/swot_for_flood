@@ -12,6 +12,7 @@ from scipy.ndimage import binary_dilation, binary_erosion
 from skimage import morphology
 from skimage.filters.rank import majority
 from auxiliary.tools import ufunc_where, power_to_db
+import copy
 
 CONDITIONS_WORLDCOVER = {
     "urban": 50,
@@ -86,7 +87,6 @@ class SwotRaster():
         self.MASK_HOLES.values = np.logical_or(self.SWOT_RASTER[self.variables[0]] == -9999, self.SWOT_RASTER[self.variables[0]] == 0)
         self.SWOT_RASTER = self.SWOT_RASTER.where(self.SWOT_RASTER != -9999)
         self.SWOT_RASTER = self.SWOT_RASTER.where(self.SWOT_RASTER != 0)
-        
         
     def normalize_raster(self, data, size):
         """ Normalize the raster data by using the majority filter """
@@ -191,12 +191,12 @@ class SwotRaster():
         condition_forest = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["forest"]
         condition_permanent_water = WC_array['band_1'].values == CONDITIONS_WORLDCOVER["permanent_water"]
         condition_open = np.logical_and(~ condition_forest,
-                ~ condition_urban)
+                # ~ condition_urban)
             # 21/07/2024 - Making masks for DA test on Chinon
-            # np.logical_and(
-            #     ~ condition_urban,
-            #     ~ condition_permanent_water)
-            # )
+            np.logical_and(
+                ~ condition_urban,
+                ~ condition_permanent_water)
+            )
         SWOT_urban = xr.apply_ufunc(ufunc_where, SWOT_array, condition_urban, dask='parallelized')
         SWOT_forest = xr.apply_ufunc(ufunc_where, SWOT_array, condition_forest, dask='parallelized')
         SWOT_open = xr.apply_ufunc(ufunc_where, SWOT_array, condition_open, dask='parallelized')
@@ -302,7 +302,7 @@ class SwotMean():
         
     def compute_mean(self):
         """ Create a mean of the SWOT Rasters data """
-        self.swot_mean = self.swot_rasters.mean(dim='time')
+        self.swot_mean = copy.deepcopy(self.swot_rasters).mean(dim='time')
         self.holes_mean = self.swot_mean[self.variables[0]] == np.nan
         
         self.controlmask = self.controlmask.to_crs(self.raster_crs)
@@ -895,9 +895,10 @@ class SwotCollection():
         if not path.parent.exists():
             raise ValueError(f"Path {path} does not exist")
         nan_mask = self.get_holes_mask(data_area, data_type)
-        nan_mask = nan_mask.sel(time=time_selection)
-        
-        nan_mask = nan_mask.isel(time=0) 
+        if data_type != "mean":
+            nan_mask = nan_mask.sel(time=time_selection)
+            if nan_mask.time.size > 1:
+                nan_mask = nan_mask.isel(time=0)
         if is_mask:
             data = self.get_floodmask_from_variable(variable, data_type, data_area)
             
@@ -910,7 +911,7 @@ class SwotCollection():
                 
         else:
             data = self.get_variable(variable, data_area, data_type, world_cover_selection)
-        
+            print(data)
         if data is None:
             raise ValueError(f"Data is None")
         
@@ -1167,17 +1168,18 @@ class SwotCollection():
                     data_flood_urban = data_flood_urban.sel(time=time_selection)
                     data_flood_forest = data_flood_forest.sel(time=time_selection)
                     data_flood_open = data_flood_open.sel(time=time_selection)
-            data_urban = data_urban.isel(time=0)
-            data_forest = data_forest.isel(time=0)
-            data_open = data_open.isel(time=0)
-            data_glob = data_glob.isel(time=0)
-            if add_uncertainty:
-                data_SNR_urban = data_SNR_urban.isel(time=0)
-                data_SNR_forest = data_SNR_forest.isel(time=0)
-                data_SNR_open = data_SNR_open.isel(time=0)
-                data_flood_urban = data_flood_urban.isel(time=0)
-                data_flood_forest = data_flood_forest.isel(time=0)
-                data_flood_open = data_flood_open.isel(time=0)
+            if data_urban.time.values.size > 1:
+                data_urban = data_urban.isel(time=0)
+                data_forest = data_forest.isel(time=0)
+                data_open = data_open.isel(time=0)
+                data_glob = data_glob.isel(time=0)
+                if add_uncertainty:
+                    data_SNR_urban = data_SNR_urban.isel(time=0)
+                    data_SNR_forest = data_SNR_forest.isel(time=0)
+                    data_SNR_open = data_SNR_open.isel(time=0)
+                    data_flood_urban = data_flood_urban.isel(time=0)
+                    data_flood_forest = data_flood_forest.isel(time=0)
+                    data_flood_open = data_flood_open.isel(time=0)
 
         # if data_type == "diff":
         #     from skimage.filters import gaussian
@@ -1236,6 +1238,8 @@ class SwotCollection():
                 global_mask[condition] = mask_darkwater[condition]
         
         # majority filter
+        if global_mask.ndim == 3:
+            global_mask = global_mask[0]
         footprint = morphology.disk(disk_size)
         global_mask = majority(global_mask.astype(np.uint8), footprint=footprint)
         global_mask = global_mask.astype(float)
@@ -1252,7 +1256,7 @@ class SwotCollection():
         
         # set mask within a data copy for geolocation
         data = data_urban.copy()
-        data.values = global_mask
+        data.values = [global_mask]
         
         self.set_floodmask_from_variable(variable, data_type, data_area, data)
         

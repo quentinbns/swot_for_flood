@@ -78,7 +78,7 @@ class Rasterizer():
         self.add_darkwater_filter : bool = add_darkwater_filter
         
         # create the list of tile names if not provided
-        if self.tile_names_selection is None:
+        if self.tile_names_selection is None or self.tile_names_selection == [] :
             self.SWOT_PATH.name
             list_tile = [name.name for name in self.SWOT_PATH.glob(f'*PIXC*.nc')]
             tiles = [name.split('_')[5] + "_" + name.split('_')[6] for name in list_tile]
@@ -135,7 +135,7 @@ class Rasterizer():
                         if datetime.strptime(time.split('T')[0], '%Y%m%d') in self.studied_time
                     ]
                 )))
-        self.list_pixc = [list(self.SWOT_PATH.glob(f'*PIXC*{time}*.nc')) for time in self.list_time_select]
+        self.list_pixc = [list(self.SWOT_PATH.glob(f'*_PIXC_*{time}*.nc')) for time in self.list_time_select]
         
         self.meta_swot = xr.open_dataset(self.list_pixc[0][0])
     
@@ -289,6 +289,12 @@ class Rasterizer():
             print("Working on ", gdf_path, flush=True)
             tiff_gpkg = []
             for var in self.variables:
+                if not os.path.exists(self.TIFF_PATH.joinpath(var)):
+                    os.makedirs(self.TIFF_PATH.joinpath(var))
+                if os.path.exists(self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif")):
+                    name_path = self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif")
+                    print(f'\t>>> File {name_path} already exists, skipping file')
+                    continue
                 print(">>> Generate tiff for ", var, flush=True)
                 tif_output = str(self.TIFF_PATH.joinpath(var, f"{gdf_path.name.split('.')[0]}_{var}.tif"))
                 if os.path.exists(tif_output):

@@ -222,13 +222,10 @@ class PlotRaster():
             mask_holes = mask_holes.sel(time=time_selection)
         except:
             print("Warning: The mask holes does not have a time dimension or an empty time dimension")
-            pass
-    
         try:
             mask_holes = mask_holes.isel(time=0)
         except:
             print("Warning: The mask holes does not have a time dimension or an empty time dimension")
-            pass
         
         m_mask = map_obj.new_layer()
         shapes = features.shapes(mask_holes.values.astype(np.uint8), transform=mask_holes.rio.transform())
@@ -238,10 +235,8 @@ class PlotRaster():
                 continue
             geo_list.append(geometry.shape(poly))
         gpd_mask = gpd.GeoDataFrame(geometry=geo_list, crs=self.CRS)
-        # gpd_mask.plot(ax=m_mask.ax, color='black', edgecolor='none', linewidth=0.0001, hatch='////', alpha=0.1, zorder=0)  
         gpd_mask.plot(ax=m_mask.ax, color='black', alpha=1, zorder=0)  
         
-        # handle = mpatches.Patch(facecolor='none', edgecolor='black', hatch='////', label='No Data or discarded data')
         handle = mpatches.Patch(facecolor='black', edgecolor='none', label='No Data or discarded data')
         
         return m_mask, handle    
@@ -365,8 +360,11 @@ class PlotRaster():
             map_obj = Maps(crs=self.CRS, figsize=(10, 10))
             fig = map_obj.f
             ax = map_obj.f.axes
-        else:
+        elif fig is not None and isinstance(ax, tuple):
             map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
+        else: # fig and ax are set with cartopy/mpl.
+            map_obj = Maps(f=fig, ax=ax)
+            
         
         # get data
         data = rxr.open_rasterio(path_to_raster)
@@ -557,9 +555,12 @@ class PlotRaster():
         if fig is None:
             map_obj = Maps(crs=self.CRS, figsize=(10, 10))
             fig = map_obj.f
-            ax = map_obj.ax
-        else:
-            map_obj = Maps(crs=self.CRS, f=fig, ax=ax)
+            ax = map_obj.f.axes
+        elif fig is not None and isinstance(ax, tuple):
+            map_obj = Maps(crs=self.CRS, ax=ax, f=fig)
+        else: # fig and ax are set with cartopy/mpl.
+            map_obj = Maps(f=fig, ax=ax)
+            
             
         # get extent of the data
         match data_area:
@@ -724,7 +725,16 @@ class PlotRaster():
             m_bkg.add_wms.OpenStreetMap.add_layer.default()
         
         # Adding missing values
-        m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
+        if data_type != "mean":
+            m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
+        else:
+            nan_mask = data.values == np.nan
+            blackdata = data.copy()
+            blackdata.values = np.where(nan_mask, 1., 0.)
+            m_data = map_obj.new_layer()
+            m_data.set_data(blackdata, x="x", y="y", crs=self.CRS, parameter=label_data)
+            m_data.set_shape.raster()
+            m_data.plot_map(vmin=0, vmax=1, cmap="grey")
         
         m_data = map_obj.new_layer()
         m_data.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
@@ -827,7 +837,7 @@ class PlotRaster():
                 data = data.sel(time=time_selection)
                 if data['time'].size > 1:
                     print(f"Warning: {data['time'].size} time steps selected. Only the first one will be used.")
-            data = data.isel(time=0)
+                    data = data.isel(time=0)
         # Set specific color if world_cover_selection is given
         color = self.select_color_world_cover(color, world_cover_selection)
             
@@ -841,9 +851,9 @@ class PlotRaster():
                 sns.histplot(data.values.flatten(), element='step', bins=bins, color=color, ax=ax, alpha=0.7, **kwargs)
         else:
             if range_hist is not None:
-                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, range=range_hist, **kwargs)
+                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, range=range_hist, density=True, **kwargs)
             else:
-                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, **kwargs)
+                ax.hist(data.values.flatten(), bins=bins, color=color, alpha=0.5, density=True, **kwargs)
             median_data = np.nanmean(data.values.flatten())
             if world_cover_selection == "urban":
                 self.median_urban = median_data
@@ -867,9 +877,9 @@ class PlotRaster():
                     sns.histplot(mean_data.values.flatten(), element='step', bins=bins, color='grey', alpha=0.5, ax=ax, **kwargs)
             else:
                 if range_hist is not None:
-                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, range=range_hist, **kwargs)
+                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, range=range_hist, density=True, **kwargs)
                 else:
-                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, **kwargs)
+                    ax.hist(mean_data.values.flatten(), bins=bins, color='grey', alpha=0.5, density=True, **kwargs)
             median_mean = np.nanmean(mean_data.values.flatten())
             if world_cover_selection == "urban":
                 self.median_mean_urban = median_mean
@@ -1305,7 +1315,7 @@ class PlotRaster():
             no_range = True
             hist_range = (data_mean.values.min(), data_mean.values.max())
         
-        ax.hist(data_mean.values.flatten(), bins=bins, color="grey", alpha=0.5, histtype='stepfilled', label="Dry mean raster", range=hist_range)
+        ax.hist(data_mean.values.flatten(), bins=bins, color="grey", alpha=0.5, histtype='stepfilled', label="Dry mean raster", range=hist_range, density=True)
         
         for i in range(data_dates['time'].size):
             data = data_dates.isel(time=i)
@@ -1313,7 +1323,7 @@ class PlotRaster():
             date_str = data_dates['time'].dt.strftime("%Y-%m-%d %H:%M").values[i]
             if no_range:
                 hist_range = (min(hist_range[0], data.min()), max(hist_range[1], data.max()))
-            ax.hist(data, bins=bins, alpha=0.5, histtype='step', label=f"{date_str}", range=hist_range)
+            ax.hist(data, bins=bins, alpha=0.5, histtype='step', label=f"{date_str}", range=hist_range, density=True)
         
         ax.set_xlabel(self.get_label(variable))
         ax.set_ylabel("Frequency")
@@ -1397,13 +1407,15 @@ class PlotRaster():
         data = self.swot_collection.get_floodmask_from_variable(variable, data_type, data_area).copy()
         if data is None:
             raise ValueError(f"The variable {variable} is not in the collection, please use create_flood_mask() method in the swot_collection object.")
+        data.isel(time=0)
         
         label_data = self.get_label(variable) if variable != "merged" else "Merged flood mask"
         holes_mask = self.swot_collection.get_holes_mask(data_area, data_type)
         holes_mask = holes_mask.sel(time=time_selection)
         if holes_mask['time'].size > 1:
             print(f"Warning: {holes_mask['time'].size} time steps selected. Only the first one will be used.")
-        holes_mask = holes_mask.isel(time=0).values
+            holes_mask = holes_mask.isel(time=0).values
+
         
         # get flood cmap and labels
         cmap, color_labels = self.get_floodmask_colormap(True)
@@ -1452,8 +1464,13 @@ class PlotRaster():
                 print(f"f1 score with compared data and classification: {f1_score_classif_compared}")
 
         data.values = data.values.astype(float)
-        data.values[holes_mask] = np.nan
-        data.values[data.values==0] = np.nan
+        if holes_mask.ndim == 3:
+            holes_mask = holes_mask[0]
+        if holes_mask.shape == data.values.shape:
+            data.values[holes_mask] = np.nan
+            data.values[data.values==0] = np.nan
+        else:
+            print("Warning: The holes mask shape is different from the data shape. The holes will not be masked on the map.")
 
         if fig is None:
             map_obj = Maps(crs=self.CRS, ax=(1,1,1), figsize=figsize)
@@ -1498,7 +1515,7 @@ class PlotRaster():
         m_mask, handle = self.add_missing_values(data_type, data_area, map_obj, time_selection)
         
         m_data = map_obj.new_layer()
-        m_data.set_data(data, x="x", y="y", crs=self.CRS, parameter=label_data)
+        m_data.set_data(data.isel(time=0), x="x", y="y", crs=self.CRS, parameter=label_data)
         m_data.set_shape.raster()
 
         m_data.plot_map(cmap=cmap, norm=matplotlib.colors.Normalize(vmin=0, vmax=255), vmin=0, vmax=255, **kwargs)

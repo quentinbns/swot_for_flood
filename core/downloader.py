@@ -117,27 +117,36 @@ class Downloader():
     def search_PIXC(self, only_studied=False):
         """search for SWOT_L2_HR_PIXC_2.0 data
         """
-        # self.search_data('SWOT_L2_HR_PIXC_D', only_studied)
-        self.search_data('SWOT_L2_HR_PIXC_2.0', only_studied)
+        self.search_data('SWOT_L2_HR_PIXC_D', only_studied)
+        # self.search_data('SWOT_L2_HR_PIXC_2.0', only_studied)
         
     def search_PIXCVec(self, only_studied=False):
         """search for SWOT_L2_HR_PIXCVec_2.0 data
         """
+        # self.search_data('SWOT_L2_HR_PIXCVec_D', only_studied)
         self.search_data('SWOT_L2_HR_PIXCVec_2.0', only_studied)
     
     def search_LakeSP(self, only_studied=False):
         """search for SWOT_L2_HR_LakeSP_2.0 data
         """
+        # self.search_data('SWOT_L2_HR_LakeSP_D', only_studied)
         self.search_data('SWOT_L2_HR_LakeSP_2.0', only_studied)
+    
+    def search_RiverSP(self, only_studied=False):
+        """search for SWOT_L2_HR_RiverSP_D data
+        """
+        self.search_data('SWOT_L2_HR_RiverSP_D', only_studied)
     
     def search_Nodes(self, only_studied=False):
         """search for SWOT_L2_HR_RiverSP_node_2.0 data
         """
+        # self.search_data('SWOT_L2_HR_RiverSP_D', only_studied)
         self.search_data('SWOT_L2_HR_RiverSP_node_2.0', only_studied)
     
     def search_Reachs(self, only_studied=False):
         """search for SWOT_L2_HR_RiverSP_reach_2.0 data
         """
+        # self.search_data('SWOT_L2_HR_RiverSP_D', only_studied)
         self.search_data('SWOT_L2_HR_RiverSP_reach_2.0', only_studied)
     
     def automatic_download(self, only_studied=False):
@@ -152,7 +161,11 @@ class Downloader():
             case 'LakeSP':
                 self.search_LakeSP(only_studied)
             case 'Nodes':
-                self.search_Nodes(only_studied)
+                # self.search_Nodes(only_studied)
+                self.search_RiverSP(only_studied)
+            case 'Reaches':
+                # self.search_Reachs(only_studied)
+                self.search_RiverSP(only_studied)
             case _:
                 raise Exception('Unknown download type')
         self.download_pool()
